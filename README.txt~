@@ -5,29 +5,30 @@ With an array of products, from web designing to SEO,
 we make sure that all your web related needs are satisfied. With a satisfied clients list ranging from the Fortune 500 companies to start-ups, we know exactly what our customers want.
 
 In order to install it on your site, download the following and create a new database.
-	Import the attached database to your new database.
+	Import the attached database nnyd.sql to your new database.
 	Assign the '$db_url' parameter of file settings.php the value of your newly created database.
 	This file is located in yourfolder/sites/default/settings.php
 	the admin login details are nnydadmin/nnydadmin.
 
 Change the paypal donation settings to:
-	Path: http://localhost/nnyd_git/admin/settings/lm_paypal/settings
+	Path: http://yoursite.com/admin/settings/lm_paypal/settings
 	LM PayPal Business/Premier Email: your paypal account id
 	LM PayPal Host: www.paypal.com
 
 Change the newsletter settings to:
-	Path: http://localhost/nnyd_git/admin/settings/simplenews/newsletter
+	Path: http://yoursite.com/admin/settings/simplenews/newsletter
 	Change parameters: Email address, From, nameFrom email address to your desired settings.
 
 Please enter your Google Analytics Account Number on:
-	Path: http://localhost/nnyd_git/admin/settings/googleanalytics
+	Path: http://yoursite.com/admin/settings/googleanalytics
 
 Enter path of your server where the banners are:
-	Path: http://localhost/nnyd_git/admin/settings/openads
+	Path: http://yoursite.com/admin/settings/openads
 	Fields: The OpenX delivery url, The OpenX https delivery url
 	Also include your zone id and name.
 
 Change the following fields as per your requirements at:
-	Path: http://localhost/nnyd_git/admin/settings/site-information
+	Path: http://yoursite.com/admin/settings/site-information
 	Fields: Name, E-mail address, Slogan, Footer message.
 
+Change the 
