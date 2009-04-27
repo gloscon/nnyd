@@ -11,24 +11,29 @@ In order to install it on your site, download the following and create a new dat
 	the admin login details are nnydadmin/nnydadmin.
 
 Change the paypal donation settings to:
-	Path: http://localhost/nnyd_git/admin/settings/lm_paypal/settings
+	Path: http://yoursite.com/admin/settings/lm_paypal/settings
 	LM PayPal Business/Premier Email: your paypal account id
 	LM PayPal Host: www.paypal.com
 
 Change the newsletter settings to:
-	Path: http://localhost/nnyd_git/admin/settings/simplenews/newsletter
+	Path: http://yoursite.com/admin/settings/simplenews/newsletter
 	Change parameters: Email address, From, nameFrom email address to your desired settings.
 
 Please enter your Google Analytics Account Number on:
-	Path: http://localhost/nnyd_git/admin/settings/googleanalytics
+	Path: http://yoursite.com/admin/settings/googleanalytics
 
 Enter path of your server where the banners are:
-	Path: http://localhost/nnyd_git/admin/settings/openads
+	Path: http://yoursite.com/admin/settings/openads
 	Fields: The OpenX delivery url, The OpenX https delivery url
 	Also include your zone id and name.
 
 Change the following fields as per your requirements at:
-	Path: http://localhost/nnyd_git/admin/settings/site-information
+	Path: http://yoursite.com/admin/settings/site-information
 	Fields: Name, E-mail address, Slogan, Footer message.
 
-
+Change the following setting to recieve e-mails when join-nnyd form is filled:
+	Path: yourfolder/modules/nnydmod/nnydmod.module
+	Change: In function nnydmod_nodeapi() change 
+	$message['id'] ='demo';
+	$message['to'] ='demo@demo.com'; with the 'id' you wish to identify the mail. and 'to' with the 
+	e-mail id where you wish to recieve the notification.
