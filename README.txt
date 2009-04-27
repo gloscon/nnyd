@@ -5,7 +5,7 @@ With an array of products, from web designing to SEO,
 we make sure that all your web related needs are satisfied. With a satisfied clients list ranging from the Fortune 500 companies to start-ups, we know exactly what our customers want.
 
 In order to install it on your site, download the following and create a new database.
-	Import the attached database to your new database.
+	Import the attached database nnyd.sql to your new database.
 	Assign the '$db_url' parameter of file settings.php the value of your newly created database.
 	This file is located in yourfolder/sites/default/settings.php
 	the admin login details are nnydadmin/nnydadmin.
@@ -30,4 +30,5 @@ Enter path of your server where the banners are:
 Change the following fields as per your requirements at:
 	Path: http://localhost/nnyd_git/admin/settings/site-information
 	Fields: Name, E-mail address, Slogan, Footer message.
+
 
