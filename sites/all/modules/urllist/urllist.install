@@ -1,0 +1,15 @@
+<?php
+// $Id: urllist.install,v 1.1 2008/02/15 16:16:25 deekayen Exp $
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function urllist_uninstall() {
+  variable_del('urllist_logacc');
+  variable_del('urllist_yahoo_submit');
+  variable_del('urllist_yahoo_cron_submit');
+  variable_del('urllist_yahoo_rss_submit');
+  variable_del('urllist_yahoo_appid');
+  variable_del('urllist_yahoo_auth_link');
+  variable_del('urllist_yahoo_auth_content');
+}

@@ -1,0 +1,138 @@
+<?php
+// $Id: xmlsitemap_file.install,v 1.1.4.14 2008/12/18 23:06:15 kiam Exp $
+
+/**
+ * @file
+ * Install file for XML Sitemap: File.
+ */
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_schema().
+ */
+function xmlsitemap_file_schema() {
+  $schema['xmlsitemap_file'] = array(
+    'description' => t('The base table for xmlsitemap_file.'),
+    'fields' => array(
+      'fid' => array(
+        'description' => t('The ID of the file.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'description' => t('The ID of the node containing the file.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => t('The change time of the file.'),
+        'type' => 'int',
+      ),
+      'previously_changed' => array(
+        'description' => t('The previous change time of the file.'),
+        'type' => 'int',
+      ),
+    ),
+    'unique keys' => array('fid_nid' => array('fid', 'nid')),
+    'primary keys' => array('fid'),
+  );
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_file_install() {
+  drupal_install_schema('xmlsitemap_file');
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6000() {
+  $ret = array();
+  $schema = xmlsitemap_file_schema();
+  if (!db_table_exists('xmlsitemap_file')) {
+    db_create_table($ret, 'xmlsitemap_file', $schema['xmlsitemap_file']);
+  }
+  else {
+    db_drop_primary_key($ret, 'xmlsitemap_file');
+    $result = array();
+    @db_drop_unique_key($result, 'xmlsitemap_file', 'fid_nid');
+    if ($result[0]['success']) {
+      $ret[] = $result[0];
+    }
+    db_change_field($ret, 'xmlsitemap_file', 'fid', 'fid',
+      $schema['xmlsitemap_file']['fields']['nid'],
+      array('primary keys' => array('fid'))
+    );
+    if (!db_column_exists('xmlsitemap_file', 'nid')) {
+      db_add_field($ret, 'xmlsitemap_file', 'nid',
+        $schema['xmlsitemap_file']['fields']['nid'],
+        array('unique keys' => array('fid_nid' => array('fid', 'nid')))
+      );
+    }
+    else {
+      db_change_field($ret, 'xmlsitemap_file', 'nid', 'nid',
+        $schema['xmlsitemap_file']['fields']['nid'],
+        array('unique keys' => array('fid_nid' => array('fid', 'nid')))
+      );
+    }
+    $result = update_sql("DELETE FROM {xmlsitemap_file} WHERE nid = 0");
+    if ($result['success']) {
+      $ret[] = $result;
+    }
+  }
+  $ret[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'xmlsitemap_file'");
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6101() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6102() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6103() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_file_update_6104() {
+  $ret = xmlsitemap_file_update_6000();
+  return $ret;
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_file_uninstall() {
+  drupal_uninstall_schema('xmlsitemap_file');
+}

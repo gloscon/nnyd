@@ -1,0 +1,108 @@
+/* $Id: taxonomy_list.css,v 1.1.2.1.2.1 2008/03/25 18:11:12 nancyw Exp $ */
+
+.taxonomy_list_radios .form-item label.option {
+  float: left;
+  margin-right: 1.5em;
+}
+
+.taxonomy_list_radios .form-item .description {
+  clear: both;
+}
+
+#taxonomy-image-admin-settings .form-item {
+  margin-bottom: 0;
+}
+
+.taxonomy-list-table {
+  width: 100%;
+  border: 0;
+  clear: both;
+}
+
+.taxonomy-list-table td {
+  vertical-align: top;
+}
+
+.taxonomy-list-parent a {
+  font-size: 175%;
+}
+
+.taxonomy-list-item {
+  float: left;
+  clear: both;
+}
+
+.taxonomy-list-term {
+  float: left;
+}
+
+.taxonomy-list-term a {
+  font-size: 133%;
+}
+
+.taxonomy-list-term-count {
+  font-size: 85%;
+  float: left;
+  margin: 0 1em 0 1em;
+}
+
+.taxonomy-list-description {
+  font-size: 100%;
+  clear: right;
+}
+
+.taxonomy-list-description p {
+  margin: 4px 0 0 0;
+  text-indent: 1.5em;
+}
+
+.taxonomy-list-item .taxonomy_image_wrapper {
+  float: left;
+  width: auto;
+}
+
+.taxonomy-list-vocabulary {
+  position: relative;
+  clear: both;
+  margin-top: 1em;
+}
+
+.taxonomy-list-vocabulary .name {
+  position: relative;
+  float: left;
+  font-size: 133%;
+  font-weight: bold;  
+}
+
+.taxonomy-list-vocabulary .description {
+  position: relative;
+  float: left;  
+  font-style: italic;
+  margin-left: 1em;
+  padding-top: 3px;
+}
+
+.taxonomy-list-cascade {
+  background-color: #ffffff;
+}
+
+.taxonomy-list-admin-links {
+  margin-top: .75em;
+}
+
+.taxonomy-list-edit-link {
+  font-size: 80%;
+
+}
+
+.taxonomy-list-parent .taxonomy-list-edit-link {
+  font-size: 46%;
+}
+
+.taxonomy-list-search-term {
+  font-size: 80%;
+}
+
+.taxonomy-list-parent .taxonomy-list-search-term {
+  font-size: 46%;
+}

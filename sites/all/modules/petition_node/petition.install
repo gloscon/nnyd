@@ -1,0 +1,206 @@
+<?php
+// $Id: petition.install,v 1.1 2009/03/17 22:09:15 gauvain Exp $
+
+/**
+* @file
+* Installs the petition module
+*/
+
+/**
+ * Implementation of hook_schema().
+ */
+function petition_schema() {
+  $schema = array();
+  $schema['petition'] = array(
+    'description' => t('Table for storing additional properties for petition nodes.'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The node identifier of a petition'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'pccheck' => array(
+        'description' => t('Enable the Checking a country entered against the country infered from the ipadress'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'pcrest' => array(
+        'description' => t('Enable geographic restrictions in the petitions'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'pcountry' => array(
+        'description' => t('Authorized countries for the petition'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'pemail' => array(
+        'description' => t('Email address to receive results'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'pfreq' => array(
+        'description' => t('Frequency to receive emails'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'poptfields' => array(
+        'description' => t('Optional fields for the petition'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'reqfields' => array(
+        'description' => t('Required fields for the petition'),
+         'type' => 'text',
+        'default' => NULL,
+      ),
+      'emailsubject' => array(
+        'description' => t('Customized email subject to the signer'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'emailbody' => array(
+        'description' => t('Customized email body to the signer'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'presfields' => array(
+        'description' => t('Result fields to show'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'image' => array(
+        'description' => t('URL path to image file'),
+        'type' => 'text',
+        'default' => NULL,
+      )  
+    ),
+    'primary key' => array('nid')
+  );
+    
+  $schema['petition_signatures'] = array(
+    'description' => t('Table for storing the signatures.'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The node identifier of a petition signature'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'cid' => array(
+        'description' => t('The signature identifier of a petition signature'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+      'name' => array(
+        'description' => t('The name in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'firstname' => array(
+        'description' => t('The firstname in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'title' => array(
+        'description' => t('The description in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'address' => array(
+        'description' => t('The address in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'zip' => array(
+        'description' => t('The zip code in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'town' => array(
+        'description' => t('The town in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'country' => array(
+        'description' => t('The country in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'tel' => array(
+        'description' => t('The tel in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'email' => array(
+        'description' => t('The email in the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'remote_address' => array(
+        'description' => t('The remote address in the signature. Transformed into country code upon confirmation'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'date' => array(
+        'description' => t('The date of the signature'),
+        'type' => 'text',
+        'default' => NULL,
+      ),
+      'hash' => array(
+        'description' => t('The hash for the confirmation'),
+        'type' => 'text',
+        'default' => NULL,
+       ),
+      'confirmed' => array(
+        'description' => t('Whether the signature is confirmed or not'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => '0',
+      )
+    ),
+   'primary key' => array('cid')
+  );
+    
+  return $schema;
+
+}
+
+/**
+*Implementation of hook_install
+*/
+
+function petition_install() {
+  db_query("UPDATE {system} SET weight = -1 WHERE name='petition' AND type='module'");
+  drupal_install_schema('petition');
+}
+
+/**
+*Implementation of hook_uninstall
+*/
+function petition_uninstall() {
+  watchdog("petition", "Removing petition module.");
+	
+  //unset petition variables
+  variable_del("petition_country_check");
+  variable_del("petition_country_restriction");
+  variable_del("petition_signature_fields_form");
+  variable_del("petition_report_fields_fields");
+  variable_del("petition_emailsubject_to_maintainer");
+  variable_del("petition_emailbody_to_maintainer");
+  variable_del("petition_signature_number");
+	
+  // Drop tables.
+  drupal_uninstall_schema('petition');
+        
+  watchdog("petition", "Petition module removed");
+}

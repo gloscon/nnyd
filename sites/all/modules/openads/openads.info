@@ -1,0 +1,13 @@
+; $Id: openads.info,v 1.4.4.1 2008/04/14 12:01:16 jaydub Exp $
+name = OpenX Adserver Integration
+description = "Integrates the OpenX (Openads) adserver into drupal"
+core = 6.x
+package = Advertising
+
+
+; Information added by drupal.org packaging script on 2008-04-25
+version = "6.x-1.0"
+core = "6.x"
+project = "openads"
+datestamp = "1209096315"
+

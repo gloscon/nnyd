@@ -1,0 +1,7 @@
+; $Id: nnydmod.info,v 1.5 2009/27/02 10:00:00 Gloscon Exp $
+name = nnydmod
+description = blocks, petitions and other functionalities.
+package = nnyd
+version = VERSION
+core = 6.x
+

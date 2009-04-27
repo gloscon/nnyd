@@ -1,0 +1,8 @@
+Installation Instructions:
+
+1. Copy the urllist module directory to your modules directory.
+
+2. Enable urllist module at: Administer > Site building > Modules
+
+3. The url list is now operational at q=urllist.txt or urllist.txt
+   Configure advanced options at Administer > Site configuration > URL list

@@ -1,0 +1,55 @@
+<?php
+// $Id: emimage.install,v 1.1.2.4 2008/12/09 23:31:28 alexua Exp $
+
+/**
+ * @file
+ * This is the emimage.module's install, configuration, and removal instructions.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function emimage_install() {
+  drupal_load('module', 'content');
+  content_notify('install', 'emimage');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function emimage_uninstall() {
+  drupal_load('module', 'content');
+  content_notify('uninstall', 'emimage');
+}
+
+/**
+ * Implementation of hook_enable().
+ */
+function emimage_enable() {
+  drupal_load('module', 'content');
+  content_notify('enable', 'emimage');
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function emimage_disable() {
+  drupal_load('module', 'content');
+  content_notify('disable', 'emimage');
+}
+
+function emimage_update_1() {
+  $ret = _emimage_update_reset_cache_views();
+
+  return $ret;
+}
+
+// I'd like this to be conditional, so it only runs if they don't have Views installed.
+// However, module_exists doesn't actually work in the update scripts.
+// TODO: Conditional on if table exists instead...
+function _emimage_update_reset_cache_views() {
+  $ret = array();
+  $ret[] = update_sql("DELETE FROM {cache_views}");
+
+  return $ret;
+}

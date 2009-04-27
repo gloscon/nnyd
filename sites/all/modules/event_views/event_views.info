@@ -1,0 +1,9 @@
+; $Id: event_views.info,v 1.2 2007/06/18 22:53:41 dww Exp $
+name = Event Views
+description = Views-enables the event fields and creates default event views.
+package = Event
+core = 6.x
+php = 5.x
+dependencies[] = event
+dependencies[] = views
+

@@ -1,0 +1,5 @@
+This document attempts to collection the documentation about how PayPal works,
+and how LM Paypal integrates with it
+
+https://www.paypal.com/IntegrationCenter/ic_std-variable-reference.html
+

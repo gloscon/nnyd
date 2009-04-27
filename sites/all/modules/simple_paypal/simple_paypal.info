@@ -1,0 +1,4 @@
+name = Simple Paypal framework
+description = "Simple Paypal framework, for use by other modules."
+core = 6.x
+version = "6.x-1.x-dev"

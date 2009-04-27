@@ -1,0 +1,8 @@
+/* $Id: petition.css,v 1.1 2009/03/17 22:09:15 gauvain Exp $ */
+#node-form .aligned_checkboxes .form-checkboxes .form-item{
+    display:block;
+    float:left;
+    width:230px;
+    clear:none;
+    font-size:10px;
+}

@@ -1,0 +1,10 @@
+; $Id: urllist.info,v 1.4 2008/02/15 16:16:25 deekayen Exp $
+name = "URL list"
+description = "Creates a list of node URLs at /q=urllist.txt or (/urllist.txt for clean URLs) for search engine indexing."
+core = 6.x
+; Information added by drupal.org packaging script on 2008-02-15
+version = "6.x-1.0"
+core = "6.x"
+project = "urllist"
+datestamp = "1203092409"
+

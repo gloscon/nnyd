@@ -1,0 +1,13 @@
+; $Id: xmlsitemap_menu.info,v 1.1.4.2 2008/11/28 10:16:31 kiam Exp $
+name = XML Sitemap: Menu
+description = Adds menu items to the site map.
+package = XML Sitemap
+dependencies[] = xmlsitemap
+core = "6.x"
+
+; Information added by drupal.org packaging script on 2008-12-19
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "xmlsitemap"
+datestamp = "1229689093"
+

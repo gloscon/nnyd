@@ -1,0 +1,86 @@
+<?php
+// $Id: xmlsitemap_menu.install,v 1.1.4.12 2008/12/18 10:59:13 kiam Exp $
+
+/**
+ * @file
+ * Install file for XML Sitemap: Menu
+ */
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_enable().
+ */
+function xmlsitemap_menu_enable() {
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function xmlsitemap_menu_disable() {
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_menu_install() {
+  $id = db_result(db_query("SELECT menu_name FROM {menu_custom} WHERE menu_name = '%s'", 'menu-xmlsitemap'));
+  if ($id != 'menu-xmlsitemap') {
+    db_query("INSERT INTO {menu_custom} (menu_name, title, description) VALUES ('%s', '%s', '%s')", 'menu-xmlsitemap', t('XML Sitemap'), t('The menu from where <em>XML Sitemap: Menu</em> looks for the menus to add to the sitemap.'));
+    menu_rebuild();
+  }
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_menu_update_6000() {
+  $ret = array();
+  $result = update_sql("DELETE FROM {variable} WHERE name = 'xmlsitemap_menu_custom_menu'");
+  if ($result['success']) {
+    $ret[] = $result;
+  }
+  $id = db_result(db_query("SELECT menu_name FROM {menu_custom} WHERE menu_name = 'menu-xmlsitemap'"));
+  if ($id != 'menu-xmlsitemap') {
+    $ret[] = update_sql("INSERT INTO {menu_custom} (menu_name, title, description) VALUES ('menu-xmlsitemap', '". t('XML Sitemap') ."', '". t('The menu from where <em>XML Sitemap: Menu</em> looks for the menus to add to the sitemap.') ."')");
+    menu_rebuild();
+  }
+  $ret[] = update_sql("UPDATE {system} SET weight = 10 WHERE name = 'xmlsitemap_menu'");
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_menu_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_menu_update_6101() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_menu_update_6102() {
+  $ret = xmlsitemap_menu_update_6000();
+  $ret[] = update_sql("DELETE FROM {menu_custom} WHERE menu_name = '1'");
+  return $ret;
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_menu_uninstall() {
+  db_query("DELETE FROM {menu_links} WHERE menu_name = 'menu-xmlsitemap'");
+  db_query("DELETE FROM {menu_custom} WHERE menu_name = 'menu-xmlsitemap'");
+  db_query("DELETE FROM {variable} WHERE name LIKE 'xmlsitemap\_menu\_%'");
+}

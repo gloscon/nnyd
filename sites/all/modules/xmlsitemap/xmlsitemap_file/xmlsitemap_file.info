@@ -1,0 +1,15 @@
+; $Id: xmlsitemap_file.info,v 1.1.4.3 2008/11/28 19:11:58 kiam Exp $
+name = XML Sitemap: File
+description = Adds node file attachments to the site map.
+package = XML Sitemap
+dependencies[] = xmlsitemap_node
+dependencies[] = upload
+core = 6.x
+
+
+; Information added by drupal.org packaging script on 2008-12-19
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "xmlsitemap"
+datestamp = "1229689093"
+

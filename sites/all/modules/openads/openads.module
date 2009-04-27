@@ -1,0 +1,626 @@
+<?php 
+// $Id: openads.module,v 1.7.2.4.2.1 2008/04/14 12:01:16 jaydub Exp $
+
+/**
+ * @file
+ * Integrates Drupal with OpenX Ad server
+ *
+ * Allows users to integerate Drupal with the OpenX (Openads)
+ * Ad server
+ *
+ * Created on 12.01.2007
+ *
+ * @author Gerd Riesselmann
+ * @author Jeff Warrington (jaydub) is new maintainer March 2008
+ *
+ */
+ 
+/**
+ * Implementation of hook_help().
+ */
+function openads_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#openads':
+    case 'admin/modules#description':
+      return t('<p>The Openads module allows site administrators to integrate Drupal with the OpenX (Openads) adserver. OpenX ad zones that are configured to be used in with openads module can be shown anywhere in a theme directly using a function call or via Drupal blocks which are automatically created for each OpenX ad zone. Additional information regarding OpenX can be found at the <a href="!openx-site">OpenX website</a>.</p>', array('!openx-site' => 'http://www.openx.org'));
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function openads_theme() {
+  return array(
+    'openads_admin_settings_form' => array(
+      'arguments' => array('form'),
+    ),
+    'openads_block' => array(
+      'arguments' => array('index'),
+    ),
+    'openads_channel' => array(
+      'arguments' => array(),
+    ),
+    'openads_invoke' => array(
+      'arguments' => array('zoneid', 'code'),
+    ),
+    'openads_remote' => array(
+      'arguments' => array('zoneid', 'code'),
+    ),
+    'openads_local' => array(
+      'arguments' => array('zoneid'),
+    ),
+    'openads_xmlrpc' => array(
+      'arguments' => array('zoneid'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function openads_menu() {
+  $items = array();
+
+  $items['admin/settings/openads'] = array(
+    'title' => 'OpenX (Openads) adserver configuration',
+    'description' => 'Configure OpenX (Openads) AdServer integration behavior and appearance.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('openads_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM, // optional
+  );
+
+  return $items;    
+}
+
+/**
+ * Implemenation of hook_settings().
+ */
+function openads_admin_settings() {
+  $form = array();
+
+  $form['adserver'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Adserver settings'),
+    '#description' => t('Select which delivery method to use - Javascript, Remote, Local or XML-RPC. <strong>Note</strong> Javascript will be used if caching is enabled and the current user is not logged in.'),
+    '#collapsible' => TRUE,
+  );
+
+  if (variable_get('openads_delivery_method', 'js') == 'xmlrpc') {
+    $PEAR_missing = $openads_xmlrpc_missing = FALSE;
+    if (!@include('XML/RPC.php')) {
+      $PEAR_missing = TRUE;
+    }
+    if (!@include('openads-xmlrpc.inc.php')) {
+      $openads_xmlrpc_missing = TRUE;
+    }
+  }
+
+  $form['adserver']['openads_delivery_method'] = array(
+    '#type' => 'radios',
+    '#title' => t('Delivery Method'),
+    '#description' => t('Select the delivery method to use. <br/><strong>Note:</strong> To use the Local method OpenX and your banners must be stored on the same machine with the same top level domain. <br/><strong>Note:</strong> To use XML-RPC method you must have the PEAR XML-RPC package installed and the OpenX openads-xmlrpc.inc.php file must be in your PHP include path. '. ($PEAR_missing ? '<br><span style="color:#f00;">PEAR XML-RPC appears to not be installed!</span> You must install the <a href="@link">PEAR XML-RPC</a> package.' : '') . ($openads_xmlrpc_missing ? '<br><span style="color:#f00;">opeands-xmlrpc.inc.php file appears to not be installed!</span> You must put the file openads-xmlrpc.inc.php from the OpenX installation files into your PHP path.' : ''), array('@link' => 'http://pear.php.net/package/XML_RPC')),
+    '#options' => array('js' => 'Javascript', 'remote' => 'Remote', 'local' => 'Local', 'xmlrpc' => 'XML-RPC'),
+    '#default_value' => variable_get('openads_delivery_method', 'js'),
+  );
+
+  $form['adserver']['openads_use_text_below_image'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable OpenX "Text below Image"'),
+    '#description' => t('OpenX is able to show a user defined text below each banner. Click this checkbox to enable this feature. Only availble on Javascript, Local and XML-RPC delivery methods.'),
+    '#default_value' => variable_get('openads_use_text_below_image', 0),
+  );
+  $form['adserver']['server_access_paths'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('OpenX Server Access Paths'),
+    '#description' => t('This group of settings defines access paths to specific elements of your OpenX server. These settings are located on your OpenX server at <strong>Settings -> Main Settings -> Delivery Settings</strong>'),
+  );
+  $form['adserver']['server_access_paths']['openads_delivery_url'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_delivery_url', ''), 
+    '#title' => t('The OpenX delivery url'),
+    '#description' => t('The OpenX server address, for example "ads.example.org/delivery". "http://" is automatically prefixed.'),
+    '#required' => TRUE,
+  ); 
+  $form['adserver']['server_access_paths']['openads_delivery_url_https'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_delivery_url_https', ''), 
+    '#title' => t('The OpenX https delivery url'),
+    '#description' => t('The OpenX server address, for example "ads.example.org/delivery". "https://" is automatically prefixed.')
+  ); 
+
+  $form['adserver']['javascript_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Javascript options'),
+    '#description' => t('The following options affect the Javascript invocation method.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['adserver']['javascript_options']['openads_js_delivery_filename'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_js_delivery_filename', 'ajs.php'), 
+    '#title' => t('The OpenX JavaScript delivery filename'),
+    '#description' => t('The OpenX JavaScript delivery filename for example "ajs.php"'),
+    '#required' => TRUE,
+  );   
+
+  $form['adserver']['remote_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Remote options'),
+    '#description' => t('The following options affect the Remote invocation method.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['adserver']['remote_options']['openads_remote_delivery_click_filename'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_remote_delivery_click_filename', 'ck.php'), 
+    '#title' => t('The OpenX Remote delivery click filename'),
+    '#description' => t('The OpenX Remote delivery click filename for example "ck.php"')
+  );   
+  $form['adserver']['remote_options']['openads_remote_delivery_view_filename'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_remote_delivery_view_filename', 'avw.php'), 
+    '#title' => t('The OpenX Remote delivery view filename'),
+    '#description' => t('The OpenX Remote delivery view filename for example "avw.php"')
+  );   
+
+  $form['adserver']['local_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Local options'),
+    '#description' => t('The following options affect the Local invocation method.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['adserver']['local_options']['openads_local_delivery_base_path'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_local_delivery_base_path', ''), 
+    '#title' => t('The OpenX Local delivery base path'),
+    '#description' => t('The base path of the OpenX installation for example "/opt/www/openx.example.com"')
+  );   
+  $form['adserver']['local_options']['openads_local_delivery_filename'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_local_delivery_filename', 'alocal.php'), 
+    '#title' => t('The OpenX Local delivery filename'),
+    '#description' => t('The OpenX Local delivery filename for example "alocal.php"')
+  );   
+
+  $form['adserver']['xmlrpc_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('XML-RPC options'),
+    '#description' => t('The following options affect the XML-RPC invocation method.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['adserver']['xmlrpc_options']['openads_xmlrpc_delivery_filename'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_xmlrpc_delivery_filename', 'axmlrpc.php'), 
+    '#title' => t('The OpenX XML-RPC delivery filename'),
+    '#description' => t('The OpenX XML-RPC delivery filename for example "axmlrpc.php"')
+  );   
+  $form['adserver']['xmlrpc_options']['openads_xmlrpc_port'] = array(
+    '#type' => 'textfield',
+    '#title' => t('XML-RPC Port'),
+    '#description' => t('If your XML-RPC server is on a non-standard port, specify it here.'),
+    '#default_value' => variable_get('openads_xmlrpc_port', 80),
+    '#size' => 4,
+  );
+  $form['adserver']['xmlrpc_options']['openads_xmlrpc_use_ssl'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use SSL'),
+    '#description' => t('If you wish to use SSL to connect to your OpenX XML-RPC server, check this option'),
+    '#default_value' => variable_get('openads_xmlrpc_use_ssl', ''),
+  );
+  $form['adserver']['xmlrpc_options']['openads_xmlrpc_timeout'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Timeout'),
+    '#description' => t('Set the timeout in seconds to connect to the OpenX XML-RPC server'),
+    '#default_value' => variable_get('openads_xmlrpc_timeout', 2),
+    '#size' => 4,
+  );
+
+  $form['publisher'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Publisher'),
+    '#description' => t('The following settings can be copied from the publisher page of your OpenX adserver.'),
+    '#collapsible' => TRUE,
+  );
+  $form['publisher']['openads_id'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_id', ''), 
+    '#title' => t('Publisher ID'),
+    '#description' => t("This is the publisher ID of the publisher you wish to serve ads from."),
+    '#required' => TRUE,
+    '#size' => 6,
+  ); 
+    $form['publisher']['openads_num_zones'] = array(
+    '#type' => 'textfield', 
+    '#default_value' => variable_get('openads_num_zones', '5'), 
+    '#title' => t('The number of zones defined'),
+    '#description' => t('This is the number of zones you can enter below'),
+    '#size' => 6,
+    );
+  
+  $form['openads_zones'] = array(
+    '#theme' => 'openads_admin_settings_form',
+    '#type' => 'fieldset',
+    '#title' => t('Zones'),
+    '#description' => t('Configure your zones here. '.
+            '<ul>'.
+            '<li>Both zone id and code are generated by your adserver, so copy it from there.</li>'.
+            '<li>The name can be freely chosen, and you are able to invoke ads using this name later one.</li>'.
+            '<li>For each user role, you can either show (checked) or hide (unchecked) ad of the according zone</li>'.
+            '</ul>'.
+            'Once you have convigured your zones, you can invoke them within your templates using either the '.
+            'index number (0-4, for example, this is the first column) or by the names you gave your zones. '.
+            'The according code is <strong>&lt;?php print openads_invoke(0);&gt;</strong> or <strong>&lt;?php print openads_invoke("my zone name");&gt;</strong>'),
+    '#collapsible' => TRUE,
+  );
+  $zones = openads_get_zones();
+  $roles = user_roles();
+  $i = 0;  
+  foreach ($zones as $zone) {
+    $form['openads_zones'][$i]['openads_zones_id_'. $i] = array(
+      '#type' => 'textfield', 
+      '#default_value' => $zone['id'],
+      '#size' => 6,
+    );  
+    $form['openads_zones'][$i]['openads_zones_name_'. $i] = array(
+      '#type' => 'textfield', 
+      '#default_value' => $zone['name'],
+      '#size' => 20,
+    );
+    $form['openads_zones'][$i]['openads_zones_code_'. $i] = array(
+      '#type' => 'textfield', 
+      '#default_value' => $zone['code'],
+      '#size' => 10,
+    );
+    foreach ($roles as $key => $display) {
+      $element_key = 'openads_zones_roles_'. $key .'_'. $i;
+      $form['openads_zones'][$i][$element_key] = array(
+        '#type' => 'checkbox', 
+        '#default_value' => $zone['roles'][$key],
+      );            
+    }
+    $i++;   
+  }
+
+  return system_settings_form($form);   
+}
+
+/**
+ * admin_settings form validate
+ */
+function openads_admin_settings_validate($form, &$form_state) {
+  switch ($form_state['values']['openads_delivery_method']) {
+    case 'remote':
+      if (!$form_state['values']['openads_remote_delivery_click_filename']) {
+        form_set_error('openads_remote_delivery_click_filename', t('For Remote delivery you must specifiy the OpenX remote delivery "click" filename.'));
+      }
+      if (!$form_state['values']['openads_remote_delivery_view_filename']) {
+        form_set_error('openads_remote_delivery_view_filename', t('For Remote delivery you must specifiy the OpenX remote delivery "view" filename.'));
+      }
+      break;
+    case 'local':
+      if (!$form_state['values']['openads_local_delivery_filename']) {
+        form_set_error('openads_local_delivery_filename', t('For Local delivery you must specifiy the OpenX local delivery filename.'));
+      }
+      if (!file_exists($form_state['values']['openads_local_delivery_base_path'] .'/www/delivery/'. $form_state['values']['openads_local_delivery_filename'])) {
+        form_set_error('openads_local_delivery_base_path', t('For Local delivery you must specifiy a valid path to the OpenX installation.'));
+      }
+      break;
+    case 'xmlrpc':
+      if (!$form_state['values']['openads_xmlrpc_delivery_filename']) {
+        form_set_error('openads_xmlrpc_delivery_filename', t('For XML-RPC delivery you must specifiy the OpenX XML-RPC delivery filename.'));
+      }
+      if (!is_numeric($form_state['values']['openads_xmlrpc_port'])) {
+        form_set_error('openads_xmlrpc_port', t('For XML-RPC delivery you must specifiy a valid number for the OpenX XML-RPC port number.'));
+      }
+      if (!is_numeric($form_state['values']['openads_xmlrpc_timeout'])) {
+        form_set_error('openads_xmlrpc_timeout', t('For XML-RPC delivery you must specifiy a valid number for the OpenX XML-RPC connection timeout.'));
+      }
+      break;
+  }
+}
+
+/**
+ * Theme function for the admin settings form
+ */
+function theme_openads_admin_settings_form($form) {
+  $roles = user_roles();
+  foreach ($form as $name => $element) {
+    $id_col = "openads_zones_id_$name";
+    $code_col = "openads_zones_code_$name";
+    $name_col = "openads_zones_name_$name";
+    if (isset($element[$id_col]) && is_array($element[$id_col])) {
+      $arr = array(
+        check_plain($name),
+        drupal_render($element[$id_col]),
+        drupal_render($element[$name_col]),
+        drupal_render($element[$code_col]),
+      );
+      foreach ($roles as $key => $rolename) {
+        $element_key = 'openads_zones_roles_'. $key .'_'. $name;
+        $arr[] = drupal_render($element[$element_key]);
+      }
+      $rows[] = $arr;
+    }
+  }
+
+  $header = array(t('Number'), t('Zone ID'), t('Name'), t('Code'));
+  foreach ($roles  as $key => $rolename) {
+    $header[] = $rolename;
+  }
+  $output .= theme('table', $header, $rows);
+
+  return $output;   
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function openads_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $zones = openads_get_zones();
+    foreach ($zones as $index => $zone) {
+      if ($zone['id']) {
+        $blocks[$index] = array(
+          'info' => t('OpenX Zone '. $zone['id'] .' ('. ($zone['name'] != '' ? $zone['name'] : 'untitled') .')'),
+          'cache' => BLOCK_NO_CACHE,
+          'weight' => 0, 
+          'enabled' => 0, 
+          'region' => 'left'
+        );
+      }
+    }
+    return $blocks;
+  }
+  else if ($op == 'view') {
+    $block = array(
+      'subject' => t('Advertising'),
+      'content' => theme('openads_block', $delta)
+    );
+    return $block;
+  }     
+} 
+
+/**
+ * Theme function for openads_block()
+ */
+function theme_openads_block($index) {
+  return openads_invoke($index);
+}
+
+/**
+ * Implement hook_init to inject our JavaScript
+ */
+function openads_init() {
+  $channel  = '
+<script type="text/javascript">
+<!--
+  var az_u = "'. _openads_trim_path(variable_get('openads_delivery_url', '')) .'";
+  var az_us = "'. _openads_trim_path(variable_get('openads_delivery_url_https', '')) .'";
+  var az_js = "'. variable_get('openads_js_delivery_filename', '') .'";
+  var az_wt = "'. variable_get('openads_use_text_below_image', 0) .'";
+-->
+</script>';
+
+  drupal_set_html_head($channel);
+  drupal_add_js(drupal_get_path('module', 'openads') .'/openads.js'); 
+}
+
+/**
+ * Prepare a server path
+ */
+function _openads_trim_path($path) {
+  return trim($path, '/') .'/';
+}
+
+/**
+ * Returns all stored zones 
+ */
+function openads_get_zones() {
+  static $ret = NULL;
+  if ($ret) {
+    return $ret;
+  }
+    
+  $c = variable_get('openads_num_zones', 5);
+  $ret = array();
+  for ($i = 0; $i < $c; $i ++) {
+    $ret[$i]['id'] = variable_get('openads_zones_id_'. $i, NULL);
+    $ret[$i]['code'] = variable_get('openads_zones_code_'. $i, NULL);
+    $ret[$i]['name'] = variable_get('openads_zones_name_'. $i, NULL);
+    $ret[$i]['roles'] = array();
+    foreach (user_roles() as $key => $name) {
+      $element_key = 'openads_zones_roles_'. $key .'_'. $i;
+      $ret[$i]['roles'][$key] = variable_get($element_key, TRUE);
+    }
+  }
+  return $ret;
+}
+
+/**
+ * Return zone with given index
+ */
+function openads_get_zone($index_or_key) {
+  $zones = openads_get_zones();
+  if (isset($zones[$index_or_key])) {
+    return $zones[$index_or_key];
+  }
+  else {
+    foreach ($zones as $zone) {
+      if ($zone['name'] == $index_or_key) {
+        return $zone;
+      }
+    }
+  }
+  return array('id' => FALSE, 'code' => FALSE, 'name' => '', 'roles' => array());
+}
+
+/**
+ * Builds and returns at_channel content
+ */
+function openads_channel() {
+  return theme('openads_channel');  
+}
+
+/**
+ * Theme function for openads_channel().
+ */
+function theme_openads_channel() {
+  global $user;
+  $url = check_plain($_GET['q']);
+  $channel[] = variable_get('openads_id', '') .'/'. $url;
+    
+  if ($user) {
+    if ($user->uid == 1) {
+      $channel[] = 'type_admin';
+    }
+    foreach ($user->roles as $roleid => $rolename) {
+      $channel[] = 'type_'. str_replace(' ', '_', $rolename);
+    }
+  } 
+  
+  $channel[] = 'url_'. $url;   
+  return implode(',', $channel);
+}
+
+/**
+ * Builds the call to OpenX 
+ */
+function openads_invoke($index_or_key) {
+  $zone = openads_get_zone($index_or_key);
+  $id = $zone['id'];
+  $code = $zone['code'];
+  if (empty($id) || empty($zone)) {
+    return '';
+  }
+
+  global $user;
+  foreach ($user->roles as $key => $value) {
+    if (!$zone['roles'][$key]) {
+      return '';
+    }
+  }
+  
+  return theme('openads_invoke', $id, $code);
+}
+
+/**
+ * Theme function for openads_invoke().
+ */
+function theme_openads_invoke($zoneid, $code) {
+  global $user;
+  $delivery_method = variable_get('openads_delivery_method', 'js');
+
+  if (_openads_is_cache_page() || $delivery_method == 'js') {
+    $out = "
+    <script type=\"text/javascript\"><!--
+      az_adjs($zoneid, '$code');
+    --></script>";
+    return $out;
+  }
+
+  switch ($delivery_method) {
+    case 'remote':
+      return theme('openads_remote', $zoneid, $code);
+      break;
+    case 'local':
+      return theme('openads_local', $zoneid);
+      break;
+    case 'xmlrpc':
+      return theme('openads_xmlrpc', $zoneid);
+      break;
+  }
+  return $out;
+}
+
+/**
+ * Theme function for Remote delivery.
+ */
+function theme_openads_remote($zoneid, $code) {
+  $url = variable_get('openads_delivery_url', '');
+  $click = variable_get('openads_remote_delivery_click_filename', 'ck.php');
+  $view = variable_get('openads_remote_delivery_view_filename', 'avw.php');
+
+  $out =  '<a href="http://'. $url .'/'. $click .'?n='. $code .'&cb='. time() .'" target="_blank"><img src="http://'. $url .'/'. $view .'?zoneid='. $zoneid .'&cb='. time() .'&n='. $code .'" border="0" alt="" /></a>';
+  return $out;
+}
+
+/**
+ * Theme function for Local delivery.
+ */
+function theme_openads_local($zoneid) {
+  $url = variable_get('openads_delivery_url', '');
+  $path = variable_get('openads_local_delivery_base_path', '');
+  $local = variable_get('openads_local_delivery_filename', 'alocal.php');
+
+  if (@include_once($path .'/www/delivery/'. $local)) {
+    if (!isset($phpAds_context)) {
+      $phpAds_context = array();
+    }
+    $use_text = variable_get('opends_use_text_below_image', 0);
+    $phpAds_raw = view_local('', $zoneid, 0, 0, '', '', $use_text, $phpAds_context);
+    return $phpAds_raw['html'];
+  }
+  else {
+    return '';
+  }
+}
+
+/**
+ * Theme function for XML-RPC delivery.
+ */
+function theme_openads_xmlrpc($zoneid) {
+  static $oaXmlRpc;
+  static $OA_context;
+
+  if (!isset($OA_context)) {
+    $OA_context = array();
+  }
+  if (!$oaXmlRpc) {
+    $xmlrpc_settings = _openads_get_xmlrpc_settings();
+    $oaXmlRpc = _openads_connect_xmlrpc($xmlrpc_settings);
+  }
+  $use_text = variable_get('openads_use_text_below_image', 0);
+  $ad = $oaXmlRpc->view('zone:'. $zoneid, 0, '', '', $use_text, $OA_context);
+  return $ad['html'];
+}
+
+/* private functions */
+
+/**
+ * Return the XML-RPC settings
+ */
+function _openads_get_xmlrpc_settings() {
+  $xmlrpc_settings['url'] = variable_get('openads_delivery_url', '');
+  list($xmlrpc_settings['host'], $xmlrpc_settings['path']) = split('/', $xmlrpc_settings['url'], 2);
+  $xmlrpc_settings['file'] = variable_get('openads_xmlrpc_delivery_filename', 'axmlrpc.php');
+  $xmlrpc_settings['port'] = variable_get('openads_xmlrpc_port', 80);
+  $xmlrpc_settings['ssl'] = (variable_get('openads_xmlrpc_use_ssl', 0) == 0) ? FALSE : TRUE ;
+  $xmlrpc_settings['timeout'] = variable_get('openads_xmlrpc_timeout', 2);
+  return $xmlrpc_settings;
+}
+
+/**
+ * Connect to OpenX via XML-RPC
+ */
+function _openads_connect_xmlrpc($xmlrpc_settings) {
+  require('openads-xmlrpc.inc.php');
+  $oaXmlRpc = new OA_XmlRpc($xmlrpc_settings['host'], '/'. $xmlrpc_settings['path'] .'/'. $xmlrpc_settings['file'], $xmlrpc_settings['port'], $xmlrpc_settings['ssl'], $xmlrpc_settings['timeout']);
+  return $oaXmlRpc;
+}
+
+/**
+ * Test to see if page request is destined for cache.
+ */
+function _openads_is_cache_page() {
+  global $user;
+
+  $cache = variable_get('cache', CACHE_DISABLED);
+  if ($cache != 0 && isset($user->uid) && $user->uid == 0) {
+    return TRUE;
+  }
+  return FALSE;
+}

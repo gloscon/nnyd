@@ -1,0 +1,84 @@
+<?php
+// $Id: xmlsitemap_engines.module,v 1.5.2.7 2008/11/29 19:25:14 kiam Exp $
+
+/**
+ * @file
+ * Define actions for Google, Yahoo!, Ask, and Windows Live.
+ */
+
+/**
+ * @addtogroup xmlsitemap
+ * @{
+ */
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_menu().
+ */
+function xmlsitemap_engines_menu() {
+  $items = array();
+  $access_content = array('access content');
+  if ($verify = variable_get('xmlsitemap_engines_google_verify', '')) {
+    $items[$verify] = array(
+      'title' => 'Google verification page',
+      'page callback' => 'xmlsitemap_engines_verify',
+      'page arguments' => array('google'),
+      'access arguments' => $access_content,
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/xmlsitemap_engines.pages.inc',
+    );
+  }
+  if (($verify = variable_get('xmlsitemap_engines_yahoo_verify', '')) != '') {
+    $items[$verify] = array(
+      'title' => 'Yahoo! verification page',
+      'page callback' => 'xmlsitemap_engines_verify',
+      'page arguments' => array('yahoo'),
+      'access arguments' => $access_content,
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/xmlsitemap_engines.pages.inc',
+    );
+  }
+  if (($verify = variable_get('xmlsitemap_engines_live_verify', 'LiveSearchSiteAuth.xml')) != '') {
+    $items[$verify] = array(
+      'title' => 'Windows Live verification page',
+      'page callback' => 'xmlsitemap_engines_verify',
+      'page arguments' => array('live'),
+      'access arguments' => $access_content,
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/xmlsitemap_engines.pages.inc',
+    );
+  }
+ 
+  return $items;
+}
+
+/*****************************************************************************
+ * Public functions.
+ ****************************************************************************/
+
+/**
+ * Submit the sitemap to the selected engine, and log the result.
+ *
+ * @param $engine
+ *  The identifier for the search engine.
+ * @param $url_var
+ *  The variable name containing the submission URL used by the search engine.
+ * @param $default_url
+ *  The default submission URL.
+ */
+function xmlsitemap_engines_submit_sitemap($engine, $url_var, $default_url) {
+  $result = drupal_http_request(variable_get($url_var, $default_url));
+  if ($result->code == 200) {
+    watchdog('xmlsitemap', 'Sitemap successfully submitted to !engine.', array('!engine' => $engine));
+  }
+  else {
+    watchdog('xmlsitemap', 'Error occurred submitting sitemap to !engine: @code', array('!engine' => $engine, '@code' => $result->code), WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * @} End of "addtogroup xmlsitemap".
+ */

@@ -1,0 +1,17 @@
+name = nnydtheme
+description = 2 columns, fixed width
+core = 6.x
+engine = phptemplate
+screenshot = screenshot.png
+regions[headerimages] = 5 header images
+regions[right] = right sidebar
+regions[content] = content
+regions[header] = header
+regions[footer] = footer
+
+; Information added by drupal.org packaging script on 2008-01-25
+version = "6.x-1.1"
+core = "6.x"
+project = "internet_center"
+datestamp = "1201239306"
+

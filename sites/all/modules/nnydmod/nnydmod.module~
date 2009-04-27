@@ -1,0 +1,605 @@
+<?php
+
+global $theme;
+
+function nnydmod_theme()
+{
+ return array(
+    'whattodo' => array(
+      'arguments' => array(),
+    ),
+
+      'petition' => array(
+      'arguments' => array(),
+    ),
+
+      'imagegalleryblock' => array(
+      'arguments' => array(),
+    ),
+
+      'videogalleryblock' => array(
+      'arguments' => array(),
+    ),
+
+      'recentevents' => array(
+      'arguments' => array(),
+    ),
+
+      'usernavigation' => array(
+      'arguments' => array(),
+    ),
+
+      'headerimagesblock' => array(
+      'arguments' => array(),
+    ),
+
+      'inpagefouricon' => array(
+      'arguments' => array(),
+    )
+);
+}
+
+function nnydmod_menu(){
+
+   $items['recentevent/all'] = array(
+    'title' => 'Recent Events',
+    //'page callback' => 'theme',
+    'page callback' => 'allrecentevents',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['upcomingevents/all'] = array(
+    'title' => 'Upcoming Events',
+    //'page callback' => 'theme',
+    'page callback' => 'allupcomingevents',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  
+  return $items;
+
+}
+
+function nnydmod_init(){
+
+	drupal_add_js(drupal_get_path('module', 'nnydmod').'/js/jquery.dimensions.js');  
+	drupal_add_js(drupal_get_path('module', 'nnydmod').'/js/jquery.accordion.js');
+	drupal_add_js(drupal_get_path('module', 'nnydmod').'/nnydmod.js');
+	drupal_add_js(drupal_get_path('module', 'nnydmod') . '/flowplayer.js');
+        drupal_add_js(drupal_get_path('module', 'nnydmod') . '/imgscroll.js');
+  	drupal_add_js(drupal_get_path('module', 'nnydmod') . '/jquery.mousewheel.min.js');
+	drupal_add_js(drupal_get_path('module', 'quicktabs') .'/js/quicktabs.js');
+	drupal_add_js(drupal_get_path('module', 'quicktabs') .'/js/quicktabs_form.js');
+
+}
+
+function nnydmod_block($op = 'list', $delta = 0, $edit = array()) {
+
+global $user;
+
+ switch ($op) {
+
+		 case 'list':
+      			$block[0]['info'] = t('What You Want To Do?');
+			$block[1]['info'] = t('Petition');
+			$block[2]['info'] = t('ImageGallery');
+			$block[3]['info'] = t('VideoGallery');
+			$block[4]['info'] = t('CustomRecentEvents');
+		        $block[5]['info'] = t('User Navigation');
+			$block[6]['info'] = t('Four Icons');
+			$block[7]['info'] = t('Header Images');
+			 return $block;
+		         break;
+
+		 case 'view':
+			 switch ($delta) {
+        			case 0:
+         			   $block['subject'] = t('What You Want To Do');
+		                   $block['content'] = theme('whattodo');
+         			    break;
+
+				case 1:
+         			   $block['subject'] = t('Sign the Petition');
+		                   $block['content'] = theme('petition');
+         			    break;
+
+				case 2:
+         			   $block['subject'] = t('Photo Gallery');
+		                   $block['content'] = theme('imagegalleryblock');
+         			    break;
+
+				case 3:
+         			   $block['subject'] = t('Video Gallery');
+		                   $block['content'] = theme('videogalleryblock');
+         			    break;
+
+				case 4:
+         			   $block['subject'] = t('Custom Recent Events');
+		                   $block['content'] = theme('recentevents');
+         			    break;
+
+				case 5:
+         			   $block['subject'] = t($user->name.'  Navigation');
+		                   $block['content'] = theme('usernavigation');
+         			    break;
+
+				case 6:
+         			   $block['subject'] = t('Four Icons');
+		                   $block['content'] = theme('inpagefouricon');
+         			    break;
+
+				case 7:
+         			   $block['subject'] = t('Header Images');
+		                   $block['content'] = theme('headerimagesblock');
+         			    break;
+
+					 }
+		 return $block;
+	      }
+
+}
+
+
+function theme_whattodo() {
+  global $user;
+  $result=db_query("SELECT node.nid AS nid FROM node node WHERE node.type='join_nnyd_form' AND node.status <> 0 AND node.uid=".$user->uid);
+  $res = db_result($result);
+
+  $pathsemi =drupal_get_path(theme,'nnydtheme');
+  $path=$pathsemi.'/images';
+  
+  if($user->uid > 0){
+    if($res) {
+    $output .= '<div class="whattodoimg1">'.theme_image($path.'/fade_nnyd.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE).'</div>';
+   }
+   else{
+    $output .='<div class="whattodoimg1">'.l(theme_image($path.'/newjoin_nnyd.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'node/add/join-nnyd-form',array('html' => TRUE)).'</div>';
+   }  
+  }else{
+    $output .='<div class="whattodoimg1">'.l(theme_image($path.'/newjoin_nnyd.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'node/add/join-nnyd-form',array('html' => TRUE)).'</div>';
+   } 
+ 
+  $output .= '<div class="whattodoimg2">'.l(theme_image($path.'/newdonate.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'paypal-donate-here',array('html' => TRUE)).'</div>'; 
+  $output .= '<div class="whattodoimg3">'.l(theme_image($path.'/newtake_tour.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'gallery/videos',array('html' => TRUE)).'</div>'; 
+  $output .= '<div class="whattodoimg4">'.l(theme_image($path.'/newsletternew.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'node/74',array('html' => TRUE)).'</div>'; 
+  return $output;
+}
+
+function theme_headerimagesblock() {
+$output1 .= '<div class="threeicons">';
+
+global $user;
+
+$result=db_query("SELECT node.nid AS nid FROM node node WHERE node.type='join_nnyd_form' AND node.status <> 0 AND node.uid=$user->uid");
+
+$res = db_result($result);
+
+ $pathsemi = drupal_get_path(theme,'nnydtheme');
+
+ $temppath = $pathsemi.'/images';
+ 
+if($user->uid > 0){
+  if($res) {
+$output1 .= '<div class="threeicons1">'.theme('image',$temppath.'/fade_nnyd.jpg', $attributes = NULL, $getsize = TRUE).'</div>';
+
+  }
+  else{
+  $output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/newjoin_nnyd.jpg', $attributes = NULL, $getsize = TRUE),'node/add/join-nnyd-form',array('html' => TRUE)).'</div>';
+  }
+}else{
+    $output1 .='<div class="threeicons1">'.l(theme_image($temppath.'/newjoin_nnyd.jpg', $alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'node/add/join-nnyd-form',array('html' => TRUE)).'</div>';
+   } 
+
+$output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/petitions.jpg', $attributes = NULL, $getsize = TRUE),'petitions/all',array('html' => TRUE)).'</div>';
+
+$output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/article.jpg', $attributes = NULL, $getsize = TRUE),'article/all',array('html' => TRUE)).'</div>';
+
+$output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/blog.jpg', $attributes = NULL, $getsize = TRUE),'blog',array('html' => TRUE)).'</div>';
+
+$output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/forum.jpg', $attributes = NULL, $getsize = TRUE),'forum',array('html' => TRUE)).'</div>';
+
+$output1 .='<div class="threeicons1">'.l(theme('image',$temppath.'/newdonate.jpg', $attributes = NULL, $getsize = TRUE),'paypal-donate-here',array('html' => TRUE)).'</div>';
+
+$output1 .='</div>';
+
+return $output1;
+
+}
+
+
+function theme_petition() {
+  $path = 'sites/all/themes/nnydtheme/images';
+
+//$sql=db_query("SELECT n.nid,n.data  FROM {webform_submitted_data} n WHERE n.sid='1'&& n.cid='1' ORDER BY n.no DESC LIMIT 0,1");
+  $sql=db_query("SELECT n.nid  FROM {node} n WHERE n.type='petition' ORDER BY n.created DESC LIMIT 0,1");
+
+   while($res=db_fetch_object($sql)) {
+
+             $node1 = node_load($res->nid);
+	     $output .='<div class="mypetitionwrap">';
+	     $output .= '<h2>'.'BE THE CHANGE....See how your click can create a revolution.....So Go For It !!!!'.'</h2>';
+//$output .= '<div class=mypetitiontext>'.$node1->webform['components'][1]['value'];
+	     $output .= '<div class="mypetitiontext">'.$node1->teaser;
+	     $output .='</div>';
+	     $output .= '<div class="mypetitionbutton">'.l('Sign the petition','node/'.$node1->nid,array('html' => TRUE)).'</div>';
+	     $output .='</div>';
+
+}
+
+	     return $output;
+}
+
+function theme_imagegalleryblock() {
+  /*drupal_add_js(drupal_get_path('module', 'nnydmod') . '/flowplayer.js');
+  drupal_add_js(drupal_get_path('module', 'nnydmod') . '/imgscroll.js');
+  //drupal_add_js(drupal_get_path('module', 'nnydmod') . '/nnydmod.js');
+  drupal_add_js(drupal_get_path('module', 'nnydmod') . '/jquery.mousewheel.min.js');*/
+ 
+
+  //$sql=db_query("SELECT n.nid FROM {node} n, {term_node} tn, {term_data} td WHERE tn.nid = n.nid AND tn.tid = td.tid AND td.name = 'Image_gallery' AND n.type='image' ORDER BY n.created desc, n.nid");
+
+  $sql=db_query("SELECT n.nid FROM {node} n WHERE n.type='image' ORDER BY n.created desc, n.nid");
+
+  $output .='<div class="navi">';
+
+  $output .='</div>'; /*navi ends*/
+  $output .='<a class="prev"></a>'; 
+
+  $output .='<div class="scrollable">';
+  $output .= '<div class="items">';
+
+  while($res=db_fetch_object($sql)) {
+
+    $image = node_load($res->nid);
+    $path = file_create_path($image->images['_original']);
+    $info = image_get_info($path);    
+
+    $output .= '<div>' .'<div class="galleryimg">'. l(theme('imagecache','frontimagegallery',$path),$path,array  ('attributes'=>array('rel'=>'lightbox[width:410px; height:310px;]['.$image->title.']'),'html' => TRUE)). '</div>'. '</div>';
+  }
+
+// l(theme('imagecache','Image_gallery',$path),"node/$image->nid",  array('html' => TRUE))
+    $output .='</div>';
+    $output .='</div>';
+
+
+    $output .='<a class="next"></a>';
+    $output .='<div class="clear"></div>';
+    $output .= ' <div class="more-link">'.l("View All...",'gallery/images').'</div>';
+    return $output;
+
+}
+
+function theme_videogalleryblock() {
+
+ /* drupal_add_js(drupal_get_path('module', 'nnydmod') . '/flowplayer.js');
+  drupal_add_js(drupal_get_path('module', 'nnydmod') . '/imgscroll.js');
+  drupal_add_js(drupal_get_path('module', 'nnydmod') . '/nnydmod.js');
+  drupal_add_js(drupal_get_path('module', 'nnydmod') . '/jquery.mousewheel.min.js');*/
+ 
+ // $sql=db_query("SELECT n.nid FROM {node} n, {term_node} tn, {term_data} td WHERE tn.nid = n.nid AND tn.tid = td.tid AND td.name = 'video_gallery1' AND n.type='video' ORDER BY n.created desc, n.nid");
+
+$sql=db_query("SELECT n.nid FROM {node} n WHERE n.type='video' ORDER BY n.created desc, n.nid");
+
+  $output .='<div class="navi">';
+  $output .='</div>'; /*navi ends*/
+  $output .='<a class="prev"></a>'; 
+
+  $output .='<div class="scrollable">';
+  $output .= '<div class="items">';
+
+  while($res=db_fetch_object($sql)) {
+
+    $node1 = node_load($res->nid);
+    $field = content_fields('field_video', 'video');
+    $item = $node1->field_video[0];
+    $thumbnail = theme('emvideo_video_thumbnail', $field, $item, 'frontimagegallery', $node1, TRUE, $options);
+    //$output .= '<div class="video_gallery">'.l($thumbnail,'node/'.$node1->nid,array('html' => TRUE)).'</div>';
+    $video = $node1->field_video[0]['embed'];
+    //$output .= '<div>' ;
+
+    $output .= '<div class="video_gallery">';
+    $output .= l($thumbnail, $video, array('attributes' => array('rel'=>'lightvideo[width:410px; height:310px;]'),'html' => TRUE, 'absolute'=>TRUE));
+    $output .= '</div>';
+
+      /* }
+    // $output .= $node1->title;
+    // $output .= substr($node1->body,0, 50).'....';
+*/
+  }
+    $output .='</div>';
+    $output .='</div>';
+
+
+    $output .='<a class="next"></a>';
+    $output .='<div class="clear"></div>';
+    $output .= ' <div class="more-link">'.l("View All...",'gallery/videos').'</div>';
+    return $output;
+
+}
+
+function nnydmod_nodeapi(&$node, $op, $teaser, $page) {
+
+	if ($node->type == 'join_nnyd_form') {
+    
+    switch ($op) {
+      case 'insert':
+
+	$headers = array(
+	'MIME-Version' => '1.0',
+	'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+	'Content-Transfer-Encoding' => '8Bit',
+	'X-Mailer' => 'Drupal'
+	);
+
+      //your data/mail..$module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE
+	$message['id'] ='demo';
+	$message['to'] ='demo@demo.com';
+	$message['subject'] = t('Notification from nnyd test site..join nnyd form filled...');
+	$message['headers']=$headers;
+
+	$message['body'] = '<table border="2">'.'<tr><td>Firstname :</td><td>'.$node->field_firstname[0]['value'].'</td></tr>'.'<tr><td>Middlename :</td><td>'.$node->field_middlename[0]['value'].'</td></tr>'.'<tr><td>Lastname :</td><td>'.$node->field_lastname[0]['value'].'</td></tr>'.'<tr><td>Address :</td><td>'.$node->field_address[0]['value'].'</td></tr>'.'<tr><td>Pincode :</td><td>'.$node->field_pincode[0]['value'].'</td></tr>'.'<tr><td>Email id :</td><td>'.$node->field_emailid[0]['email'].'</td></tr>'.'<tr><td>Alternate email id:</td><td>'.$node->field_emailidalt[0]['email'].'</td></tr>'.'<tr><td>Nationality:</td><td>'.$node->field_nationality[0]['value'].'</td></tr>'.'<tr><td>LanguagesKnown :</td><td>'.$node->field_languagesknown[0]['value'].'</td></tr>'.'<tr><td>Mobile:</td><td>'.$node->field_phone_mobile[0]['value'].'</td></tr>'.'<tr><td>Residence:</td><td>'.$node->field_phone_residence[0]['value'].'</td></tr>'.'<tr><td>Educational Qualification:</td><td>'.$node->field_eduqualification[0]['value'].'</td></tr>'.'<tr><td>Other:</td><td>'.$node->field_othereduqualification[0]['value'].'</td></tr>'.'<tr><td>Current job:</td><td>'.$node->field_current_job[0]['value'].'</td></tr>'.'<tr><td>Office:</td><td>'.$node->field_phone_office[0]['value'].'</td></tr>'.'<tr><td>Statement of purpose:</td><td>'.$node->field_sop[0]['value'].'</td></tr>'.'</table>';
+		drupal_mail_send($message);
+    	break;
+
+     case 'update':
+
+	$headers = array(
+	'MIME-Version' => '1.0',
+	'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+	'Content-Transfer-Encoding' => '8Bit',
+	'X-Mailer' => 'Drupal'
+	);
+
+      //your data/mail..$module, $key, $to, $language, $params = array(), $from = NULL, $send = TRUE
+	$message['id'] ='tm-bchhaya';
+	$message['to'] ='tm-bchhaya@openkick.com';
+
+	$message['subject'] = t('Notification from nnyd. NNYDjoin form updated with following details: ');
+
+/*$message['body'] = drupal_html_to_text('<br/>Firstname :&nbsp;&nbsp;'.$node->field_firstname[0]['value'].'<br/>Middlename:&nbsp;&nbsp;'.$node->field_middlename[0]['value'].'<br/>Lastname:&nbsp;&nbsp;'.$node->field_lastname[0]['value'].'<br/>Address:&nbsp;&nbsp;'.$node->field_address[0]['value'].'<br/>Pincode:&nbsp;&nbsp;'.$node->field_pincode[0]['value'].'<br/>Email id:&nbsp;&nbsp;'.$node->field_emailid[0]['email'].'<br/>Alternate email id:&nbsp;&nbsp;'.$node->field_emailidalt[0]['email'].'<br/>Nationality:&nbsp;&nbsp;'.$node->field_nationality[0]['value'].'<br/>LanguagesKnown:&nbsp;&nbsp;'.$node->field_languagesknown[0]['value'].'<br/>Mobile:&nbsp;&nbsp;'.$node->field_phone_mobile[0]['value'].'<br/>Residence:&nbsp;&nbsp;'.$node->field_phone_residence[0]['value'].'<br/>Educational Qualification:&nbsp;&nbsp;'.$node->field_eduqualification[0]['value'].'<br/>Other:&nbsp;&nbsp;'.$node->field_othereduqualification[0]['value'].'<br/>Current job:&nbsp;&nbsp;'.$node->field_current_job[0]['value'].'<br/>Office:&nbsp;&nbsp;'.$node->field_phone_office[0]['value'].'<br/>Statement of purpose:&nbsp;&nbsp;'.$node->field_sop[0]['value']);*/
+
+	$message['headers']=$headers;
+	
+	$message['body'] ='<table border="2">'.'<tr><td>Firstname :</td><td>'.$node->field_firstname[0]['value'].'</td></tr>'.'<tr><td>Middlename :</td><td>'.$node->field_middlename[0]['value'].'</td></tr>'.'<tr><td>Lastname :</td><td>'.$node->field_lastname[0]['value'].'</td></tr>'.'<tr><td>Address :</td><td>'.$node->field_address[0]['value'].'</td></tr>'.'<tr><td>Pincode :</td><td>'.$node->field_pincode[0]['value'].'</td></tr>'.'<tr><td>Email id :</td><td>'.$node->field_emailid[0]['email'].'</td></tr>'.'<tr><td>Alternate email id:</td><td>'.$node->field_emailidalt[0]['email'].'</td></tr>'.'<tr><td>Nationality:</td><td>'.$node->field_nationality[0]['value'].'</td></tr>'.'<tr><td>LanguagesKnown :</td><td>'.$node->field_languagesknown[0]['value'].'</td></tr>'.'<tr><td>Mobile:</td><td>'.$node->field_phone_mobile[0]['value'].'</td></tr>'.'<tr><td>Residence:</td><td>'.$node->field_phone_residence[0]['value'].'</td></tr>'.'<tr><td>Educational Qualification:</td><td>'.$node->field_eduqualification[0]['value'].'</td></tr>'.'<tr><td>Other:</td><td>'.$node->field_othereduqualification[0]['value'].'</td></tr>'.'<tr><td>Current job:</td><td>'.$node->field_current_job[0]['value'].'</td></tr>'.'<tr><td>Office:</td><td>'.$node->field_phone_office[0]['value'].'</td></tr>'.'<tr><td>Statement of purpose:</td><td>'.$node->field_sop[0]['value'].'</td></tr>'.'</table>';
+	
+	drupal_mail_send($message);
+    	break;
+
+     case 'validate':
+
+	 if (strlen($node->field_phone_mobile[0][value]) != 10) {
+	    form_set_error('field_phone_mobile', t('Invalid mobile no.'));
+	 }
+
+	if(!is_numeric($node->field_phone_mobile[0][value])){
+	    form_set_error('field_phone_mobile', t('Invalid mobile no. Enter digits only.'));
+	}
+
+	if(!is_numeric($node->field_pincode[0][value])){
+	    form_set_error('field_pincode', t('Invalid pincode. Enter digits only.'));
+	}
+
+	if(!is_numeric($node->field_phone_residence[0][value]) and (isset($node->field_phone_residence[0][value])==FALSE)){
+	    form_set_error('field_phone_residence', t('Invalid residence no. Enter digits only.'));
+	}
+
+	if(!is_numeric($node->field_phone_office[0][value]) and (isset($node->field_phone_office[0][value])==FALSE)){
+	    form_set_error('field_phone_office', t('Invalid office no. Enter digits only.'));
+	}
+
+	/*if(strlen($node->field_phone_mobile[0][value])<10){
+	    form_set_error('field_phone_mobile', t('Invalid office no. Enter 10 digits.'));
+	}*/
+
+
+	break;
+
+  }
+
+  }
+
+/*print_r ($node);*/
+}
+
+
+function theme_recentevents() {
+  //$sql=db_query("SELECT n.* FROM {node} as n WHERE n.type='event' order by n.created DESC");
+  $sql=db_query("SELECT n.* , e.* FROM {node} as n, {event} as e WHERE n.type='event'AND e.nid=n.nid order by e.event_end DESC");
+
+  $i = 0;
+  
+
+    while($res=db_fetch_object($sql)) {
+        $node=node_load($res->nid);
+        $date=time();
+  
+        $date1=convert_datetime($node->event['end']);
+        $datestart=convert_datetime($node->event['start']);
+    
+
+        if($date1 < $date)
+        {
+         
+	if($i < 2){
+               $output1 .= '<div class="archevent1">';
+               $output1 .= '<div class="reventtitle">'.l($node->title,"node/$node->nid").'</div>';
+ 	       $output1 .= '<div class="eventdate">'.date("F,j,Y",$datestart).'</div>';
+             //  $output1 .= t(' to ').' '.'<div class="eventdate">'.$node->event['end'].'</div>';		
+               $output1 .= '<div class="content">'.substr($node->body,0,150)."....".'</div>';
+
+	if($i==0){
+               $output1 .='<div class="eventmorelinkborder">'.l("more...",'node/'.$node->nid).'</div>';
+		 }
+	else{
+	       $output1 .='<div class="eventmorelink">'.l("more...",'node/'.$node->nid).'</div>';
+	    }
+
+               $output1 .= '</div>';
+	       $output1 .= '<br>'.'</br>';
+	      
+        
+	          }
+          $i++;
+        }
+        
+     					}
+      
+$output1 .='<div class="eventmorelink1">'.l("View All...",'recentevent/all').'</div>';       
+
+     return $output1;
+}
+
+
+function convert_datetime($str) {
+ 
+
+
+  list($date, $time) = explode(' ', $str);
+  list($year, $month, $day) = explode('-', $date);
+  //list($hour, $minute, $second) = explode(':', $time);
+  
+  $timestamp = mktime(0,0,0,intval($month), intval($day), intval($year));
+  
+  return $timestamp;
+}
+
+
+function allrecentevents() {
+  //$sql=db_query("SELECT n.* FROM {node} as n WHERE n.type='event' order by n.created DESC");
+
+   $sql=db_query("SELECT n.* , e.* FROM {node} as n, {event} as e WHERE n.type='event'AND e.nid=n.nid order by e.event_end DESC");
+  
+    while($res=db_fetch_object($sql)) {
+        $node=node_load($res->nid);
+        $date=time();
+
+        $date1=convert_datetime($node->event['end']);
+	$datestart=convert_datetime($node->event['start']);
+
+        if($date1 < $date)
+        {
+               $output .= '<div class="archevent">';
+               $output .= '<div class="allreventtitle">'.l($node->title,"node/$node->nid").'</div>';
+ 	       $output .= '<div class="allreventdate">'.date("F,j,Y",$datestart).'</div>';
+              // $output .= t(' to ').' '.'<div class="allreventdate">'.$node->event['end'].'</div>';		
+               $output .= '<div class="content">'.substr($node->body,0,150)."....".'</div>';
+              
+               $output .='<div class="allreventmorelink">'.l("more...",'node/'.$node->nid).'</div>';
+               $output .= '</div>';
+	       $output .= '<br>'.'</br>';
+        }
+        
+     					}
+      
+//$output .='<div class="eventmorelink1">'.l("View All...",'recentevent/all').'</div>';       
+
+     return $output;
+}
+
+
+function allupcomingevents() {
+  $sql=db_query("SELECT n.* , e.* FROM {node} as n, {event} as e WHERE n.type='event'AND e.nid=n.nid order by e.event_start ASC");
+  
+    while($res=db_fetch_object($sql)) {
+        $node=node_load($res->nid);
+        $date=time();
+
+        $date1=convert_datetime($node->event['end']);
+	$datestart=convert_datetime($node->event['start']);
+
+        if($date < $datestart)
+        {
+               $output .= '<div class="archevent">';
+               $output .= '<div class="allreventtitle">'.l($node->title,"node/$node->nid").'</div>';
+ 	       $output .= '<div class="allreventdate">'.date("F,j,Y",$datestart).'</div>';
+              // $output .= t(' to ').' '.'<div class="allreventdate">'.$node->event['end'].'</div>';		
+               $output .= '<div class="content">'.substr($node->body,0,150)."....".'</div>';
+              
+               $output .='<div class="allreventmorelink">'.l("more...",'node/'.$node->nid).'</div>';
+               $output .= '</div>';
+	       $output .= '<br>'.'</br>';
+        }
+        
+     					}
+      
+//$output .='<div class="eventmorelink1">'.l("View All...",'recentevent/all').'</div>';       
+
+     return $output;
+}
+
+
+
+
+
+
+function theme_usernavigation(){
+
+$items=array();
+global $user;
+/*echo '
+<ul class="menu">
+<li class="leaf">'.l('My account', "user/$user->uid", array('title' => 'My personal info')).'</li>
+<li class="leaf">'.l('My Articles', "myarticle", array('html' => 'TRUE')).'</li>
+<li class="leaf">'.l('My Blogs', "myblog", array('html' => 'TRUE')).'</li>
+<li class="leaf">'.l('My Forum Topics', "myforum", array('html' => 'TRUE')).'</li>
+<!--any other locked or normal items here-->
+</ul>';*/
+
+$items[] .= l('My account', "user/$user->uid", array('title' => 'My personal info'));
+$items[] .= l('My Articles', "myarticle", array('html' => 'TRUE'));
+$items[] .= l('My Blogs', "myblog", array('html' => 'TRUE'));
+$items[] .= l('My Forum Topics', "myforum", array('html' => 'TRUE'));
+$items[] .= l('My Images', "myimage", array('html' => 'TRUE'));
+$items[] .= l('My Videos', "myvideo", array('html' => 'TRUE'));
+
+	if($user->uid == '1'){
+	  $items[] .= l('NNYD Members', "members/nnyd", array('html' => 'TRUE'));
+			   }
+
+$output = theme_item_list($items,NULL,'ul',NULL);
+
+return $output;
+
+}
+
+function theme_inpagefouricon() {
+
+
+  $pathsemi =drupal_get_path(theme,'nnydtheme');
+  $path=$pathsemi.'/images';
+      $output .= '<div class="fouricons1">'.l(theme('image',$path.'/newsletterin.jpg',$alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'node/74',array('html' => TRUE)).'</div>';
+
+      /*$output .= '<div class="fouricons1">'.l(theme('image',$path.'/take_ain.jpg',$alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'videos/all',array('html' => TRUE)).'</div>'; */
+
+      $output .= '<div class="fouricons1">'.l(theme('image',$path.'/video_galleryin.jpg',$alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'gallery/videos',array('html' => TRUE)).'</div>'; 
+
+      $output .= '<div class="fouricons1">'.l(theme('image',$path.'/photo_galleryin.jpg',$alt = '', $title = '', $attributes = NULL, $getsize = TRUE),'gallery/images',array('html' => TRUE)).'</div>'; 
+
+  return $output;
+
+}
+
+
+
+/*function nnydmod_nodeapi(&$node, $op) {
+
+if ( $op == 'validate' ) {
+// We only care about nodes of type 'desired type'
+$type = 'join_nnyd_form';  // Change this to the type you want to restrict titles on
+if ( $node->type == $type ) {
+  $sql = "SELECT n.title, n.nid FROM {node} n WHERE type = '%s' AND title = '%s'";
+  $results = db_query($sql, $type, $node->title);
+  $existing = db_fetch_object($results);
+  // We get here on both inserts and updates
+  // For updates we want to make sure the title does not match another one
+  // So we make sure it is an insert ( ! $node->nid )
+  // or for update that we have not just found the node being updated ( $exisiting->nid != $node->nid )
+  if ( ( ! $node->nid ||  $existing->nid != $node->nid ) && $existing->title == $node->title ) {
+    $link = l(t('existing %type', array('%type' => $type)), "node/$existing->nid");
+    form_set_error('title', t('There is already a %type called %title, see %link.', array('%type' => $type, '%title' => $node->title, '%link' => $link)));
+  }
+}
+}
+}*/
+

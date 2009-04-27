@@ -1,0 +1,131 @@
+<?php
+// $Id: xmlsitemap_node.install,v 1.9.2.8 2008/12/18 10:59:13 kiam Exp $
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_enable().
+ */
+function xmlsitemap_node_enable() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("UPDATE {xmlsitemap_node} xn INNER JOIN {node} n ON xn.nid = n.nid LEFT JOIN {node_comment_statistics} s ON s.nid = xn.nid
+        SET xn.previously_changed = xn.last_changed, xn.last_changed = n.changed, xn.last_comment = s.last_comment_timestamp
+        WHERE xn.nid = n.nid AND (xn.last_changed <> n.changed OR xn.last_comment <> s.last_comment_timestamp)"
+      );
+      break;
+    case 'pgsql':
+      db_query("UPDATE {xmlsitemap_node} SET previously_changed = last_changed, last_changed = {node}.changed, last_comment = {node_comment_statistics}.last_comment_timestamp
+        FROM {node} LEFT JOIN {node_comment_statistics} ON {node_comment_statistics}.nid = {node}.nid
+        WHERE {xmlsitemap_node}.nid = {node}.nid AND (last_changed <> {node}.changed OR last_comment <> {node_comment_statistics}.last_comment_timestamp)"
+      );
+      break;
+  }
+  db_query("INSERT INTO {xmlsitemap_node} (nid, last_changed, last_comment, previous_comment)
+    SELECT n.nid, n.changed, s.last_comment_timestamp, MAX(c.timestamp) FROM {node} n
+    LEFT JOIN {node_comment_statistics} s ON s.nid = n.nid
+    LEFT OUTER JOIN {comments} c ON c.nid = n.nid AND c.timestamp < s.last_comment_timestamp
+    LEFT JOIN {xmlsitemap_node} xn ON xn.nid = n.nid
+    WHERE xn.nid IS NULL
+    GROUP BY n.nid, n.changed, s.last_comment_timestamp"
+  );
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function xmlsitemap_node_disable() {
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function xmlsitemap_node_schema() {
+  $schema['xmlsitemap_node'] = array(
+    'description' => t('The base table for xmlsitemap_node.'),
+    'fields' => array(
+      'nid' => array(
+        'description' => t('The path of this node.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'last_changed' => array(
+        'description' => t('Keeps track of new changes.'),
+        'type' => 'int',
+      ),
+      'previously_changed' => array(
+        'description' => t('Keeps track of old changes.'),
+        'type' => 'int',
+      ),
+      'last_comment' => array(
+        'description' => t('Link to last comment.'),
+        'type' => 'int',
+      ),
+      'previous_comment' => array(
+        'description' => t('Link to previous comment.'),
+        'type' => 'int',
+      ),
+      'priority_override' => array(
+        'description' => t('Stores the index value.'),
+        'type' => 'float',
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_node_install() {           
+  drupal_install_schema('xmlsitemap_node');
+}
+
+/**
+ * Implementation of hook_update_N().
+ *
+ */
+function xmlsitemap_node_update_6000() {
+  $ret = array();
+  if (db_column_exists('xmlsitemap_node', 'pid')) {
+    $result = array();
+    @db_drop_index($result, 'xmlsitemap_node', 'pid');
+    if ($result[0]['success']) {
+      $ret[] = $result[0];
+    }
+    db_drop_field($ret, 'xmlsitemap_node', 'pid');
+  }
+  $ret[] = update_sql("UPDATE {system} SET weight = 7 WHERE name = 'xmlsitemap_node'");
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ *
+ */
+function xmlsitemap_node_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ *
+ */
+function xmlsitemap_node_update_6101() {
+  return xmlsitemap_node_update_6000();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_node_uninstall() {
+  drupal_uninstall_schema('xmlsitemap_node');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'xmlsitemap\_node\_%'");
+}

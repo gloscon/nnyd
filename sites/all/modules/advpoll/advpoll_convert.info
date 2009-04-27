@@ -1,0 +1,12 @@
+; $Id: advpoll_convert.info,v 1.1.2.2 2007/10/07 23:10:43 chriskennedy Exp $
+name = Advanced Poll Converter
+description = Converts a site's standard Drupal polls into Advanced Poll polls.
+dependencies = votingapi advpoll
+package = "Voting"
+
+; Information added by drupal.org packaging script on 2009-02-01
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "advpoll"
+datestamp = "1233446466"
+

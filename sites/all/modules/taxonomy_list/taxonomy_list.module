@@ -1,0 +1,510 @@
+<?php
+// $Id: taxonomy_list.module,v 1.7.2.1.2.1 2008/03/25 18:11:12 nancyw Exp $
+
+/**
+ * @file
+ * List the category as specified in the URL.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function taxonomy_list_help($path, $args = null) {
+  switch ($path) {
+    case 'admin/help#taxonomy_list':
+      return '<p>'. t('The Taxonomy List module adds pages that list all terms in a vocabulary (category). In addition, when the Taxonomy Image module is installed, these lists can include an image for each term.') .'</p>';
+  }
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function taxonomy_list_perm() {
+  return array('administer taxonomy_list');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function taxonomy_list_menu() {
+  $items = array();
+
+  $items['admin/settings/taxonomy_list'] = array(
+    'title' => 'Taxonomy List',
+    'description' => 'Customize how Taxonomy List displays terms on vocabulary pages.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('taxonomy_list_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    );
+
+  $items['taxonomy/vocabulary/%'] = array(
+    'page callback' => 'taxonomy_list_show',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function taxonomy_list_init() {
+  drupal_add_css(drupal_get_path('module', 'taxonomy_list') .'/taxonomy_list.css');
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function taxonomy_list_theme() {
+  return array(
+    'taxonomy_list_admin_links' => array(
+      'arguments' => array('vids'),
+      ),
+    'taxonomy_list_vocabulary' => array(
+      'arguments' => array('vocabulary'),
+      ),
+    'taxonomy_list_term' => array(
+      'arguments' => array('term', 'vocabulary', 'controls'),
+      ),
+    );
+}
+
+/**
+ * Show the category list
+ */
+function taxonomy_list_show($str_vids) {
+  if (preg_match('/^([0-9]+[+ ])+[0-9]+$/', $str_vids)) {
+    // The '+' character in a query string may be parsed as ' '.
+    $vids = preg_split('/[+ ]/', $str_vids);
+  }
+  else if (preg_match('/^[0-9]+$/', $str_vids) ) {
+    $vids = array($str_vids);
+  }
+
+  if (count($vids) <= 0) {
+    drupal_not_found();
+    return;
+  }
+
+  $controls = array(
+    'show_image' => variable_get('taxonomy_list_show_image', 1),
+    'cells_per_row' => variable_get('taxonomy_list_cell_per_row', 2),
+    'count_type' => variable_get('taxonomy_list_count', 'none'),
+    'no_show' => variable_get('taxonomy_list_noshow', false),
+    'add_links' => variable_get('taxonomy_list_add_links', false),
+    'image_link' => variable_get('taxonomy_list_image_link', 'term'),
+    'destination' => drupal_get_destination(),
+    'taxonomy_image' => module_exists('taxonomy_image'),
+    'list_mode' => variable_get('taxonomy_list_list_mode', 0),
+    );
+
+  if ($controls['cells_per_row'] > 0) {
+    $controls['cell_width'] = floor(100 / $controls['cells_per_row']);
+  }
+  else {
+    $controls['cell_width'] = 100;
+  }
+
+  $vocab_titles = array();
+  $total_terms  = 0;
+
+  $output = '<div class="taxonomy-list">';
+
+  foreach ($vids as $vid) {
+    $vocab = taxonomy_vocabulary_load($vid);
+    $terms = taxonomy_get_tree($vid);
+
+    $c = count($terms);
+    $total_terms += $c;
+
+    if ($c <= 0) {
+      // This vocab has no term, skip.
+      continue;
+    }
+
+    $vocab_titles[] = $vocab->name;
+    $output .= theme('taxonomy_list_vocabulary', $vocab);
+
+    $output .= _taxonomy_list_get_table($terms, $vocab, $controls);
+  }
+
+  $output .= '</div>'; // class="taxonomy-list"
+
+  if ($total_terms == 0) {
+    drupal_not_found();
+    return;
+  }
+
+  $bc = array(l(t('Home'), ''));
+
+  drupal_set_breadcrumb($bc);
+  $separator = variable_get('taxonomy_list_title_separator', '&');
+  $sep = ($separator == ',' ? null : ' ') . $separator .' ';
+  drupal_set_title(implode($sep, $vocab_titles));
+
+  $output .= theme('taxonomy_list_admin_links', $vids);
+
+  return $output;
+}
+
+/**
+ * Pad the remaining cells in the table
+ */
+function _taxonomy_list_pad_row(&$cells, &$rows, $cells_per_row) {
+  $cellscount = count($cells);
+
+  if ($cellscount > 0) {
+    // padding
+    for ($j = $cellscount; $j < $cells_per_row; $j++) {
+      $cells[] = '&nbsp;';
+    }
+    $rows[] = array('data' => $cells);
+    $cells  = array();
+  }
+}
+
+/**
+ * Generate cascaded tables with terms and sub terms inside
+ */
+function _taxonomy_list_get_table($terms, $vocabulary, $controls) {
+  // list of terms those already rendered
+  static $done = array();
+  $cells = array();
+  $rows  = array();
+
+  foreach ($terms as $term) {
+    // Have we already seen this term?
+    if (in_array($term->tid, $done)) {
+      continue;
+    }
+
+    $done[] = $term->tid;
+
+    $children = taxonomy_get_children($term->tid, $vocabulary->vid);
+    $has_children = $children && ($controls['list_mode'] == 0);
+
+    if ($has_children) {
+      // Pad the row so the parent term will start at the begining of the next row.
+      _taxonomy_list_pad_row($cells, $rows, $controls['cells_per_row']);
+    }
+
+    // TODO: consider a depth attribute for parents.
+    $cell  = $has_children ? '<div class="taxonomy-list-cascade"><div class="taxonomy-list-parent">' : null;
+
+    $stuff = theme('taxonomy_list_term', $term, $vocabulary, $controls);
+    // Was there something in the cell?
+    if (!$stuff) {
+      continue;
+    }
+    $cell .= $stuff;
+
+    $cell .= '</div>';  // class="taxonomy-list-item"
+
+    if ($has_children) {
+      $cell .= '</div>'; // class="taxonomy-list-parent"
+      $cell .= '<div class="taxonomy-list-children">';
+      $cell .= _taxonomy_list_get_table($children, $vocabulary, $controls);
+      $cell .= '</div>'; // class="taxonomy-list-children"
+      $cell .= '</div>'; // class="taxonomy-list-cascade"
+    }
+
+    if ($has_children) {
+      // Span the cell to cover the whole row, and then the next term will start at the begining of the next row.
+      $cells[] = array('data' => $cell, 'width' => '100%', 'colspan' => $controls['cells_per_row']);
+      $rows[] = array('data' => $cells);
+      $cells = array();
+    }
+    else {
+      $cells[] = array('data' => $cell, 'width' => $controls['cell_width'] .'%');
+
+      // Add cell into the row, advance row if it reach the end of row.
+      if (count($cells) % $controls['cells_per_row'] == 0) {
+        $rows[] = array('data' => $cells);
+        $cells = array();
+      }
+    }
+  }
+
+  // Ensure that the table will be in good shape by padding the last row of the table.
+  _taxonomy_list_pad_row($cells, $rows, $controls['cells_per_row']);
+
+  $table_attrs = array(
+    'id' => 'taxonomy-list-table-'. $vocabulary->vid,
+    'class' => 'taxonomy-list-table',
+    );
+  return theme('table', array(), $rows, $table_attrs);
+}
+
+/**
+ * Theme the admin links.
+ */
+function theme_taxonomy_list_admin_links($vids) {
+  $destination = drupal_get_destination();
+  $output = '<div class="taxonomy-list-admin-links">';
+  $links = array();
+  
+  if (user_access('administer taxonomy')) {
+    foreach ($vids as $vid) {
+      $vocabulary = taxonomy_vocabulary_load($vid);
+      $links['taxonomy_list_add_'. $vid] = array(
+        'title' => t('Add to "@name"', array('@name' => $vocabulary->name)), 
+        'href' => 'admin/content/taxonomy/'. $vocabulary->vid .'/add/term',
+        );
+      $links['taxonomy_list_edit_'. $vid] = array(
+        'title' => t('Edit "@name"', array('@name' => $vocabulary->name)), 
+        'href' => 'admin/content/taxonomy/edit/vocabulary/'. $vocabulary->vid,
+        'query' => $destination,
+        );
+    }
+  }  
+  if (user_access('administer taxonomy_list')) {
+    $links['taxonomy_list_admin'] = array(
+      'title' => t('Taxonomy list settings'), 
+      'href' => 'admin/settings/taxonomy_list',
+      'query' => $destination,
+      );
+  }  
+  
+  $output .= theme('links', $links);
+  $output .= '</div>';
+  return $output; 
+}
+
+/**
+ * Theme the vocabulary.
+ */
+function theme_taxonomy_list_vocabulary($vocabulary) {
+  $output = '<div class="taxonomy-list-vocabulary">';
+  $output .= '<div class="name">'. $vocabulary->name .'</div>';
+  $output .= '<div class="description">'. $vocabulary->description .'</div>';
+  $output .= '</div>';
+  return $output; 
+}
+
+/**
+ * Theme the term.
+ */
+function theme_taxonomy_list_term($term, $vocabulary, $controls) {
+  $output = '<div class="taxonomy-list-item">';
+  if ($controls['taxonomy_image'] && $controls['show_image']) {
+    $links = array();
+    switch ($controls['image_link']) {
+      case 'term':
+        // Must use the 'html' flag for the l function.
+        $links['taxonomy-list-image'] = array(
+          'title' => taxonomy_image_display($term->tid),
+          'href' => taxonomy_term_path($term),
+          'html' => true,
+          );
+        break;
+      case 'big':        
+        $obj = taxonomy_image_get_object($term->tid);
+        $links['taxonomy-list-image'] = array(
+          'title' => taxonomy_image_display($term->tid),
+          'href' => $obj->url,
+          'html' => true,
+          );
+    }
+    $output .= theme('links', $links);
+  }
+  
+  switch ($controls['count_type']) {
+    case 'none':
+      $counter = null;
+      break;
+
+    case 'all':
+      $count = taxonomy_term_count_nodes($term->tid);
+      if ($count == 0 && $controls['no_show']) {
+        return null;
+      }
+      $counter = '<div class="taxonomy-list-term-count">('. $count .')</div>';
+      break;
+
+    case 'not_zero':
+    case 'by_type':
+      $count_list = array();
+      $count = 0;
+      foreach ($vocabulary->nodes as $type) {
+        $this_count = taxonomy_term_count_nodes($term->tid, $type);
+        if ($this_count > 0 || $controls['count_type'] == 'by_type') {
+          $count_list[] = $type .': '. $this_count;
+        }
+        $count += $this_count;
+      }
+      if ($count == 0 && $controls['no_show']) {
+        return null;
+      }
+      if ($count_list) {
+        $counter = '<div class="taxonomy-list-term-count">('. implode(', ', $count_list) .')</div>';
+      }
+      break;
+  }
+
+  $links = array();
+  $links['taxonomy-list-term'] = array(
+    'title' => check_plain($term->name),  // check_plain shows html entities as text.
+    'href' => taxonomy_term_path($term),
+    'html' => true,
+    );
+  $output .= theme('links', $links) . $counter;
+
+  // Do we want admin links?  
+  if ($controls['add_links']) {
+    $links = array();
+    if (user_access('administer taxonomy')) {
+      $links['taxonomy-list-edit-link'] = array(
+        'title' => 'edit term',
+        'href' => 'admin/content/taxonomy/edit/term/'. $term->tid,
+        'query' => $controls['destination'],
+        );
+    if (user_access('search content')) {
+      $links['taxonomy-list-search-term'] = array(
+        'title' => t('search for term'), 
+        'href' => 'search/node/"'. $term->name .'"',
+        'attributes' => array('title' => t('search for content using this term')),
+//        'query' => $controls['destination'],
+        );
+    }
+    }
+    if ($links) {
+      $output .= theme('links', $links, array('class' => 'links inline'));
+    }
+  }
+  
+  $output .= '<div class="taxonomy-list-description">'. check_markup($term->description) .'</div>';
+  $output .= '</div>';
+
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Menu callback; presents the admin settings form.
+ */
+function taxonomy_list_admin_settings() {
+  $form = array();
+
+  $form['taxonomy_list_info'] = array(
+    '#value' => t('<p>The taxonomy_list module enable the URL to browse into each vocabulary, using the format of :</p>')
+      .  t('<code>"taxonomy/vocabulary/&lt;vid&gt;"</code>')
+      .  t('<p>Together with the taxonomy_image.module, the list can be displayed with a image icon.</p>')
+    );
+ 
+  $sep_opts = array(
+    '&' => 'ampersand (&amp;)',
+    '|' => 'vertical bar (pipe)',
+    ',' => 'comma (,)',
+    '&bull;' => 'bullet',
+    '&#8211;' => 'en-dash (&#8211;)',
+    '&#8212;' => 'em-dash (&#8212;)',
+    '_' => 'underscore',
+    );
+  $form['taxonomy_list_title_separator'] = array(
+    '#type' => 'radios',
+    '#title' => t('Vocabulary separator'),
+    '#default_value' => variable_get('taxonomy_list_title_separator', '&'),
+    '#options' => $sep_opts,
+    '#description' => t('This is the character that separates multiple vocabulary names in the page title.'),
+    '#prefix' => '<div class="taxonomy_list_radios">',
+    '#suffix' => '</div>',
+    ); 
+
+    $form['taxonomy_list_list_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('List Mode'),
+    '#default_value' => variable_get('taxonomy_list_list_mode', 0),
+    '#options' => array(
+        '0' => t("Hierarchical - Subcategories as a table inside their parent's cell."),
+        '1' => t('Flat - All terms are listed as the same level in the grid.'),
+      ),
+    '#description' => t('How Taxonomy List displays the list of terms.'),
+//    '#prefix' => '<div class="taxonomy_list_radios">',
+//    '#suffix' => '</div>',
+      ); 
+
+  $form['taxonomy_list_cell_per_row'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Terms per row'),
+    '#size' => 5,
+    '#default_value' => variable_get('taxonomy_list_cell_per_row', 2),
+    '#description' => t('Number of terms to be displayed on the same row.'),
+    ); 
+
+  $form['taxonomy_list_add_links'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Add administration links'),
+    '#default_value' => variable_get('taxonomy_list_add_links', false),
+    '#description' => t('Should I add administration links (e.g. "edit term") to the display for authorized users?'),
+    );
+
+  $form['count'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Count content'),
+    '#collapsible' => true,
+    '#collapsed' => false,
+    );
+
+    $count_opts = array(
+        'none' => t('No count.'),
+        'all' => t('Count all content types.'),
+        'by_type' => t('Count by content type.'),
+        'not_zero' => t("Count by type, don't show zero counts."),
+      );
+    $form['count']['taxonomy_list_count'] = array(
+      '#type' => 'radios',
+      '#title' => t('Count content types'),
+      '#default_value' => variable_get('taxonomy_list_count', 0),
+      '#options' => $count_opts,
+      '#description' => t('How Taxonomy List counts the content types for terms.'),
+      '#prefix' => '<div class="taxonomy_list_radios">',
+      '#suffix' => '</div>',
+      );
+
+    $form['count']['taxonomy_list_noshow'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Hide terms with no content'),
+      '#default_value' => variable_get('taxonomy_list_noshow', false),
+      '#description' => t('Do not show the term if there is no content using the term.'),
+      );
+
+    if (module_exists('taxonomy_image')) {
+      $form['taxonomy_image'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Taxonomy Image'),
+        '#description' => t('The taxonomy Image module is available.'),
+        '#collapsible' => true,
+        '#collapsed' => false,
+        );
+
+      $form['taxonomy_image']['taxonomy_list_show_image'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Show taxonomy image?'),
+        '#default_value' => variable_get('taxonomy_list_show_image', 1),
+        '#description' => t('Display the taxonomy image?'),
+        );
+
+      if (variable_get('taxonomy_image_wrapper', false)) {
+        $form['taxonomy_image']['taxonomy_list_show_image']['#description'] .= ' '. t('Note that Taxonomy Image already provides a wrapper &lt;div&gt;, which may be styled individually.');
+      }
+
+      $img_link_opts = array(
+        'term' => t('Term path (e.g. taxonomy/term/xxx).'),
+        'big' => t('Full size image.'),
+        );
+      $form['taxonomy_image']['taxonomy_list_image_link'] = array(
+        '#type' => 'radios',
+        '#options' => $img_link_opts,
+        '#title' => t('Show taxonomy image?'),
+        '#default_value' => variable_get('taxonomy_list_image_link', 'term'),
+        '#description' => t('Display the taxonomy image?'),
+        '#prefix' => '<div class="taxonomy_list_radios">',
+        '#suffix' => '</div>',
+        );
+  }
+
+  return system_settings_form($form);
+}

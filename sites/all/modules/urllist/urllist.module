@@ -1,0 +1,268 @@
+<?php
+// $Id: urllist.module,v 1.15 2008/02/15 16:16:25 deekayen Exp $
+
+/**
+ * @file
+ * Creates a list of URLs for search engines to index.
+ *
+ * @version $Id: urllist.module,v 1.15 2008/02/15 16:16:25 deekayen Exp $
+ * @author David Kent Norman
+ * @link http://deekayen.net/
+ */
+
+/**
+ * Implementation of hook_menu().
+ *
+ * @return array
+ */
+function urllist_menu() {
+  $items = array();
+
+  $items['urllist.txt'] = array(
+    'page callback' => 'theme',
+    'page arguments' => array('urllist'),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'user_access',
+    'access arguments' => array('access content')
+  );
+  $items['urllist'] = array(
+    'page callback' => 'theme',
+    'page arguments' => array('urllist'),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'user_access',
+    'access arguments' => array('access content')
+  );
+  $items['admin/settings/urllist'] = array(
+    'title' => 'URL list',
+    'description' => 'Toggle access log for URL list and edit Yahoo! API information.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('urllist_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  /* since this would get skipped on during the module install
+  a _submit() hook was added to the settings form to force
+  a menu rebuild so this can be captured if a Yahoo verification
+  URL was added. */
+  if ($yahoo_link = variable_get('urllist_yahoo_auth_link', '')) {
+    $items[$yahoo_link] = array(
+      'title' => 'Yahoo! authentication',
+      'page callback' => 'urllist_verify_yahoo',
+      'type' => MENU_CALLBACK,
+      'access callback' => 'user_access',
+      'access arguments' => array('access content')
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_settings().
+ *
+ * @return array
+ */
+function urllist_admin_settings() {
+  $form = array();
+  $form['urllist_logacc'] = array(
+    '#type'          => 'checkbox',
+    '#title'         => 'Log accesses',
+    '#default_value' => variable_get('urllist_logacc', 0),
+    '#description'   => t('If enabled, a watchdog entry will be made each time the URL list is accessed, containing information about the requestor.')
+  );
+
+  $form['url_submit_yahoo'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Yahoo! Update Notification API'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('The Yahoo! Update Notification service requires a <strong>generic</strong> application ID, which can be obtained from applying for one at <a href="https://developer.yahoo.com/wsregapp/index.php">https://developer.yahoo.com/wsregapp/index.php</a>.')
+  );
+  $form['url_submit_yahoo']['urllist_yahoo_submit'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Submit URL list when updated'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('urllist_yahoo_submit', 0),
+    '#description' => t('If enabled, the sitemap will be submitted to Yahoo! via HTTP request each time it is updated.'),
+  );
+  $form['url_submit_yahoo']['urllist_yahoo_cron_submit'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Submit URL list on cron runs'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('urllist_yahoo_cron_submit', 0),
+    '#description' => t('If enabled, the sitemap will be submitted to Yahoo! via HTTP request each time the cron job is run.'),
+  );
+  $form['url_submit_yahoo']['urllist_yahoo_rss_submit'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Submit RSS feed'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('urllist_yahoo_rss_submit', 0),
+    '#description' => t('If enabled, the front page RSS feed will be submitted to Yahoo! via HTTP along with the URL list'),
+  );
+  $form['url_submit_yahoo']['urllist_yahoo_appid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Yahoo! application ID'),
+    '#return value' => '',
+    '#default_value' => variable_get('urllist_yahoo_appid', '')
+  );
+
+  $form['auth'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Yahoo! Site Explorer Authentication'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => l('Yahoo! Site Explorer', 'https://siteexplorer.search.yahoo.com/')
+  );
+  $form['auth']['urllist_yahoo_auth_link'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authentication file name'),
+    '#return value' => '',
+    '#default_value' => variable_get('urllist_yahoo_auth_link', ''),
+    '#description' => t('In order to view stats, Yahoo! will ask you to verify that you control this site by creating a page with a certain name. Enter that name here and the urllist module will hook that filename. Note that this will only work if you have clean URLs enabled.'),
+  );
+  $form['auth']['urllist_yahoo_auth_content'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authentication file content'),
+    '#return value' => '',
+    '#default_value' => variable_get('urllist_yahoo_auth_content', ''),
+    '#description' => t('The authentication file has a specific string of random characters Yahoo! will look for inside the above file name when it revalidates your site ownership.'),
+  );
+
+  /* While it is cleaner in the code to just add the extra
+  submit handler first and return system_settings_form($form),
+  the system_settings_form() information needs to be first
+  so the information is saved to the urllist_yahoo_auth_link
+  variable before menu_rebuild() is called so hook_menu() can
+  add it to the menu tables in the database since hook_menu()
+  is no longer called on every page load as of Drupal 6. */
+  $form = system_settings_form($form);
+  $form['#submit'][] = 'urllist_admin_settings_submit';
+
+  return $form;
+}
+
+/**
+ * Capture any Yahoo! verification link URLs so
+ * the menu can know to react to them when requested.
+ */
+function urllist_admin_settings_submit() {
+  menu_rebuild();
+  drupal_set_message(t('The URL List module re-built the menu information to check for a URL for Yahoo! authentication.'), 'status');
+}
+
+/**
+ * Implmentation of hook_nodeapi().
+ */
+function urllist_nodeapi(&$node, $op, $teaser = NULL, $page = NULL) {
+  switch ($op) {
+    case 'insert':
+    case 'delete':
+      if (variable_get('urllist_yahoo_submit', 0) && $node->status) {
+        watchdog('urllist', "Submitting URL list to Yahoo! because node %node_id was inserted or deleted.", array('%node_id' => $node->nid), WATCHDOG_DEBUG);
+        _urllist_submit_yahoo();
+      }
+      break;
+    case 'update':
+      if (variable_get('urllist_yahoo_submit', 0) && ($node->status || $oldnode->status)) {
+        watchdog('urllist', "Submitting URL list to Yahoo! because node %node_id was updated.", array('%node_id' => $node->nid), WATCHDOG_DEBUG);
+        _urllist_submit_yahoo();
+      }
+      break;
+  }
+}
+
+function urllist_cron() {
+  if (variable_get('urllist_yahoo_cron_submit', 0)) {
+    watchdog('urllist', 'Submitting URL list to Yahoo! from cron job.', NULL, WATCHDOG_DEBUG);
+    _urllist_submit_yahoo();
+  }
+}
+
+/**
+ * Print list of URLs in plaintext format
+ */
+function theme_urllist() {
+  if (!ini_get('safe_mode')) {
+    set_time_limit(240);
+  }
+  header('Content-type: text/plain');
+  print url('', array('absolute' => TRUE)) ."\n";
+  $result = db_query("SELECT n.nid, n.type, n.status, n.promote, n.changed, u.dst FROM {node} n LEFT JOIN {url_alias} u ON u.src=CONCAT('node/',n.nid)");
+  while ($node = db_fetch_object($result)) {
+    if ($node->status) { // add check for if the node type is disabled or not
+      if (isset($node->dst)) { // alias is named
+        print url($node->dst, array('absolute' => TRUE)) ."\n";
+      }
+      else {
+        print url('node/'. $node->nid, array('absolute' => TRUE)) ."\n";
+      }
+    }
+  }
+  if (module_exists('taxonomy')) {
+    $result = db_query('SELECT d.tid FROM {term_data} d');
+    while ($topic = db_fetch_object($result)) {
+      print url('taxonomy/term/'. $topic->tid, array('absolute' => TRUE)) ."\n";
+    }
+  }
+  if (module_exists('search')) {
+    print url('search', array('absolute' => TRUE)) ."\n";
+  }
+  if (module_exists('image')) {
+    print url('image', array('absolute' => TRUE)) ."\n";
+  }
+  if (module_exists('randomizer')) {
+    print url('randomizer', array('absolute' => TRUE)) ."\n";
+  }
+  if (module_exists('blog')) {
+    print url('blog', array('absolute' => TRUE)) ."\n";
+  }
+  if (variable_get('urllist_logacc', 0)) {
+    watchdog('urllist', 'URL list downloaded by '. getenv('HTTP_USER_AGENT') .' at '. getenv('REMOTE_ADDR') .'.', NULL, WATCHDOG_INFO);
+  }
+}
+
+/**
+ * Prints a string for Yahoo Site Explorer authentication
+ */
+function urllist_verify_yahoo() {
+  die(variable_get('urllist_yahoo_auth_content', ''));
+}
+
+/**
+ * Submits the urllist to Yahoo Site Explorer
+ * Requires a generic Yahoo! Developer Network Appid
+ *
+ * @link https://developer.yahoo.com/wsregapp/index.php
+ * @link https://developer.yahoo.com/wsregapp/index.php?view
+ */
+function _urllist_submit_yahoo() {
+  $result = drupal_http_request('http://search.yahooapis.com/SiteExplorerService/V1/updateNotification?appid='. variable_get('urllist_yahoo_appid', '') .'&url='. url('urllist.txt', array('absolute' => TRUE)));
+  if ($result->code == 200) {
+    watchdog('urllist', 'URL list successfully submitted to Yahoo!', NULL, WATCHDOG_INFO);
+  }
+  else {
+    watchdog('urllist', 'Error occurred submitting URL list to Yahoo!: @code: @data', array('@code' => $result->code, '@data' => $result->data), WATCHDOG_ERROR);
+  }
+  if (variable_get('urllist_yahoo_rss_submit', 0)) {
+    $result = drupal_http_request('http://search.yahooapis.com/SiteExplorerService/V1/updateNotification?appid='. variable_get('urllist_yahoo_appid', '') .'&url='. url('rss.xml', array('absolute' => TRUE)));
+    if ($result->code == 200) {
+      watchdog('urllist', 'RSS feed successfully submitted to Yahoo!.', NULL, WATCHDOG_INFO);
+    }
+    else {
+      watchdog('urllist', 'Error occurred submitting RSS feed to Yahoo!: @code: @data', array('@code' => $result->code, '@data' => $result->data), WATCHDOG_ERROR);
+    }
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ *
+ * @return array
+ */
+function urllist_theme() {
+  return array(
+    'urllist' => array()
+  );
+}

@@ -1,0 +1,104 @@
+<?php
+// $Id: xmlsitemap_term.install,v 1.5.2.8 2008/12/18 23:06:15 kiam Exp $
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_enable().
+ */
+function xmlsitemap_term_enable() {
+  db_query("INSERT INTO {xmlsitemap_term} (tid, last_changed)
+    SELECT td.tid, %d FROM {term_data} td
+    LEFT JOIN {xmlsitemap_term} xt ON xt.tid = td.tid
+    WHERE xt.tid IS NULL",
+    time()
+  );
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function xmlsitemap_term_disable() {
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function xmlsitemap_term_schema() {
+  $schema['xmlsitemap_term'] = array(
+    'description' => t('The base table for xmlsitemap_term.'),
+    'fields' => array(
+      'tid' => array(
+        'description' => t('The id of the path.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'last_changed' => array(
+        'description' => t('Keeps track of new changes.'),
+        'type' => 'int',
+      ),
+      'previously_changed' => array(
+        'description' => t('Keeps track of old changes.'),
+        'type' => 'int',
+      ),
+      'priority_override' => array(
+        'description' => t('Stores the index value.'),
+        'type' => 'float',
+      ),
+    ),
+    'primary key' => array('tid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_term_install() {
+  drupal_install_schema('xmlsitemap_term');
+}
+
+/**
+ * Implementation of hook_update_N().
+ * Updates the SQL tables.
+ */
+function xmlsitemap_term_update_6000() {
+  $ret = array();
+  if (db_column_exists('xmlsitemap_term', 'pid')) {
+    $result = array();
+    @db_drop_index($result, 'xmlsitemap_term', 'pid');
+    if ($result[0]['success']) {
+      $ret[] = $result[0];
+    }
+    db_drop_field($ret, 'xmlsitemap_term', 'pid');
+  }
+  $ret[] = update_sql("UPDATE {system} SET weight = 7 WHERE name = 'xmlsitemap_term'");
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_term_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_term_update_6101() {
+  return xmlsitemap_term_update_6000();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_term_uninstall() {
+  drupal_uninstall_schema('xmlsitemap_term');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'xmlsitemap\_term\_%'");
+}

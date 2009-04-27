@@ -1,0 +1,25 @@
+<?php
+// $Id: event_views.module,v 1.25 2008/01/06 00:31:11 killes Exp $
+/**
+ * @file
+ * Views-enables the event module.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function event_views_help($arg, $path) {
+  switch ($arg) {
+    case 'admin/help#event_views':
+      $output  = t('<p>The Event Views module makes the event fields available to the Views module, and creates default event views that filter dates using a drop-down date selector, the jscalendar selector, or by arguments in the url. Set up a default event view by going to %link and select <strong>add</strong>. Save the default views as-is or make any changes you like.</p>', array('%link' => l('admin/views', 'admin/views')));
+      $output .= t('<p>You can change the format of the output. The default views display a list of events, but you can change it to a table or a teaser list in the <strong>Page</strong> settings. You can also add or remove fields from the view.</p>');
+      $output .= t('<p>You can filter events in several ways. Use filters to pre-select a date range, expose those filters to allow the viewer to select a date range, or eliminate the filters and give the view year, month, and day arguments to filter the events by the url (i.e. YYYY/MM/DD).</p>');
+      return $output;
+  }
+}
+
+ function event_views_views_api() {
+	 return array('api' => '2', 'path' => drupal_get_path('module', 'event_views') . '/includes' );
+ } // function event_views_views_api
+
+

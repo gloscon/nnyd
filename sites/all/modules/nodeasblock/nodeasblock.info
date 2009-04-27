@@ -1,0 +1,11 @@
+; $Id: nodeasblock.info,v 1.2 2008/06/18 07:26:08 herc Exp $
+name = Node As Block
+description = Enables creation of blocks showing node teasers.
+core = 6.x
+
+; Information added by drupal.org packaging script on 2008-10-16
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "nodeasblock"
+datestamp = "1224158940"
+

@@ -1,0 +1,79 @@
+<?php
+// $Id: xmlsitemap_menu.module,v 1.1.4.6 2008/12/08 00:06:41 kiam Exp $
+
+/**
+ * @file
+ * Adds menu items to the site map.
+ */
+
+/**
+ * @addtogroup xmlsitemap
+ * @{
+ */
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function xmlsitemap_menu_form_alter(&$form, $form_state, $form_id) {
+  switch ($form_id) {
+    case 'xmlsitemap_settings_sitemap':
+      $opts = array();
+      $result = db_query("SELECT menu_name, title FROM {menu_custom}");
+      while ($menu = db_fetch_array($result)) {
+        $opts[$menu['menu_name']] = empty($menu['title']) ? $menu['menu_name'] : $menu['title'];
+      }
+      $default_values = variable_get('xmlsitemap_menu_menus', array());
+      // If a menu is not present, remove it from the default settings.
+      foreach ($default_values as $opt) {
+        if (!isset($opts[$opt])) {
+          unset($default_values[$opt]);
+        }
+      }
+      if (!empty($opts)) {
+        $form['xmlsitemap_menu_menus'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Menus to include in site map'),
+          '#default_value' => $default_values,
+          '#options' => $opts,
+        );
+        $form['buttons']['#weight'] = 1;
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_xmlsitmap_links().
+ */
+function xmlsitemap_menu_xmlsitemap_links($type = NULL) {
+  if (!$GLOBALS['user']->uid) {
+    // Add the links only when the code is being executed from the anonymous user.
+    if (!isset($type)) {
+      $menus = variable_get('xmlsitemap_menu_menus', array());
+      foreach ($menus as $menu) {
+        $result = db_query("SELECT ml.*, m.* FROM {menu_links} ml LEFT JOIN {menu_router} m ON m.path = ml.router_path WHERE  ml.menu_name = '%s' ORDER BY ml.plid, ml.mlid ASC", $menu);
+        while ($link = db_fetch_array($result)) {
+          // Avoid external links, or links to the front page;
+          // both have $link['external'] set to 1.
+          if (!$link['external'] && !$link['hidden']) {
+            _menu_link_translate($link);
+            if ($link['access'] == 1) {
+              if (($alias = drupal_lookup_path('alias', $link['href']) === FALSE)) {
+                $alias = NULL;
+              }
+              $url = xmlsitemap_url($link['href'], $alias, NULL, NULL, TRUE);
+              if (($count = db_result(db_query("SELECT COUNT(*) FROM {xmlsitemap} WHERE loc = '%s", $url))) == 0) {
+                db_query("INSERT INTO {xmlsitemap} (loc, priority) VALUES ('%s', %f)", $url, min(max(round($link['weight'] / 20 + 0.5, 1), 0), 1));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

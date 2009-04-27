@@ -1,0 +1,24 @@
+<?php
+
+// $Id: lm_paypal_paid_adverts.install,v 1.23.6.1 2008/10/13 04:24:39 lyricnz Exp $
+
+/**
+ * @file
+ *
+ * Install or update the PayPal Paid Adverts interface.
+ *
+ * Lee McLoughlin <lee@lmmrtech.com>. Aug 2006
+ */
+
+/**
+ * hook_install()
+ */
+function lm_paypal_paid_adverts_install() {
+}
+
+/**
+ * hook_uninstall()
+ */
+function lm_paypal_paid_adverts_uninstall() {
+}
+

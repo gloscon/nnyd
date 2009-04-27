@@ -1,0 +1,10 @@
+; $Id: petition.info,v 1.1 2009/03/17 22:09:15 gauvain Exp $
+name = petition
+description = enable to create and administer online petitions. Extended usablity if installed together with the IP to country module
+core = 6.x
+; Information added by drupal.org packaging script on 2009-03-18
+version = "6.x-1.1-beta1"
+core = "6.x"
+project = "petition_node"
+datestamp = "1237362642"
+

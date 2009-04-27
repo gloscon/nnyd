@@ -1,0 +1,241 @@
+<?php
+// $Id: xmlsitemap.install,v 1.5.2.24 2008/12/18 22:28:37 kiam Exp $
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_enable().
+ */
+function xmlsitemap_enable() {
+  xmlsitemap_update_sitemap();
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function xmlsitemap_schema() {
+  $schema['xmlsitemap'] = array(
+    'description' => t('The base table for xmlsitemap.'),
+    'fields' => array(
+      'loc' => array(
+        'description' => t('The path of this node.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'lastmod' => array(
+        'description' => t('Last change time.'),
+        'type' => 'int',
+      ),
+      'changefreq' => array(
+        'description' => t('The frequency of the changes.'),
+        'type' => 'int',
+      ),
+      'priority' => array(
+        'description' => t('The priority of this node in the sitemap.'),
+        'type' => 'float',
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_install() {
+  drupal_install_schema('xmlsitemap');
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    db_query('CREATE OR REPLACE FUNCTION first(anyelement, anyelement) RETURNS anyelement AS \'SELECT COALESCE($1, $2);\' LANGUAGE \'sql\';');
+    @db_query("DROP AGGREGATE first(anyelement)");
+    db_query("CREATE AGGREGATE first(
+      sfunc = first,
+      basetype = anyelement,
+      stype = anyelement
+    );");
+  }
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6000() {
+  $ret = array();
+  $schema = xmlsitemap_schema();
+  if ($GLOBALS['db_type'] == 'pgsql') {
+    $ret[] = update_sql('CREATE OR REPLACE FUNCTION first(anyelement, anyelement) RETURNS anyelement AS \'SELECT COALESCE($1, $2);\' LANGUAGE \'sql\';');
+    $result = @update_sql("DROP AGGREGATE first(anyelement)");
+    if ($result['success']) {
+      $ret[] = $result;
+    }
+    $ret[] = update_sql("CREATE AGGREGATE first(
+      sfunc = first,
+      basetype = anyelement,
+      stype = anyelement
+    );");
+  }
+  if (db_table_exists('xmlsitemap_additional')) {
+    db_drop_table($ret, 'xmlsitemap_additional');
+  }
+  if (!db_table_exists('xmlsitemap')) {
+    db_create_table($ret, 'xmlsitemap', $schema['xmlsitemap']);
+  }
+  $result = array();
+  @db_drop_primary_key($result, 'xmlsitemap');
+  if ($result[0]['success']) {
+    $ret[] = $result[0];
+  }
+  $result = array();
+  @db_change_field($result, 'xmlsitemap', 'loc', 'loc',
+    $schema['xmlsitemap']['fields']['loc']
+  );
+  if ($result[0]['success']) {
+    $ret[] = $result[0];
+  }
+  $result = array();
+  @db_change_field($result, 'xmlsitemap', 'changefreq', 'changefreq', $schema['xmlsitemap']['fields']['changefreq']);
+  if ($result[0]['success']) {
+    $ret[] = $result[0];
+  }
+  if (_xmlsitemap_delete_tmp_files(file_directory_path() .'/xmlsitemap')) {
+    $ret[] = array(
+      'success' => TRUE,
+      'query' => 'DELETE TEMPORARY FILES',
+    );
+  }
+  $ret[] = update_sql("DELETE FROM {cache_page} WHERE cid LIKE '%%sitemap%%.xml'");
+  menu_rebuild();
+  $ret[] = array(
+    'success' => TRUE,
+    'query' => 'UPDATE DRUPAL MENUS',
+  );
+  if (!variable_get('xmlsitemap_update', FALSE)) {
+    variable_set('xmlsitemap_update', TRUE);
+    $ret[] = array(
+      'success' => TRUE,
+      'query' => 'FORCE SITEMAP UPDATE',
+    );
+  }
+  return $ret;
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6101() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6102() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6103() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6104() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6105() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6106() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ * Try to remove any temporary files left.
+ */
+function xmlsitemap_update_6107() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6108() {
+  return array();
+}
+
+/**
+ * Implementation of hook_update_N().
+ */
+function xmlsitemap_update_6109() {
+  return xmlsitemap_update_6000();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_uninstall() {
+  // Drop the tables.
+  drupal_uninstall_schema('xmlsitemap');
+  // Remove the used variables.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'xmlsitemap\_%'");
+}
+
+/*****************************************************************************
+ * Private functions.
+ ****************************************************************************/
+
+/**
+ * Remove temporary files, and folders up to four levels.
+ *
+ * @param $path
+ *  The path of the folder to remove.
+ * @return
+ *  Boolean value; TRUE on success.
+ */
+function _xmlsitemap_delete_tmp_files($path) {
+  static $count = 0;
+  $error = FALSE;
+  $count++;
+  if ($dir = @opendir($path)) {
+    while (($file = readdir($dir)) !== FALSE) {
+      if ($file != '.' && $file != '..') {
+        $fpath = "$path/$file";
+        if (is_dir($fpath)) {
+          if ($count < 5) {
+            $error |= _xmmsitemap_delete_temp_files($fpath);
+          }
+        }
+        else {
+          $error |= @unlink($fpath);
+        }
+      }
+    }
+    closedir($dir);
+    $error |= @rmdir($path);
+  }
+  return $error;
+}

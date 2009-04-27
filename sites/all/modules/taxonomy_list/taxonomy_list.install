@@ -1,0 +1,16 @@
+<?php
+// $Id: taxonomy_list.install,v 1.1.2.1.2.1 2008/03/25 18:11:12 nancyw Exp $
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function taxonomy_list_uninstall() {
+  variable_del('taxonomy_list_cell_per_row');
+  variable_del('taxonomy_list_list_mode');
+  variable_del('taxonomy_list_show_image');
+  variable_del('taxonomy_list_title_separator');
+  variable_del('taxonomy_list_image_link');
+  variable_del('taxonomy_list_count');
+  variable_del('taxonomy_list_noshow');
+  variable_del('taxonomy_list_add_links');
+}

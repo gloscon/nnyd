@@ -1,0 +1,167 @@
+<?php
+// $Id: local_menu.module,v 1.7 2008/03/19 11:27:00 fokke Exp $
+
+define('LOCAL_MENU_TOP',				1);
+define('LOCAL_MENU_PARENT',			10);
+define('LOCAL_MENU_FAMILY',			11);
+define('LOCAL_MENU_CHILDREN',		12);
+define('LOCAL_MENU_UNLIMITED',	99);
+
+function local_menu_block($op = 'list', $delta = 0, $edit = array()) {
+
+  if ($op == 'list') {
+		$blocks[0] = array(
+		  'info'       => t('Local Menu'),
+		);
+		
+		return $blocks;
+	}
+	
+	switch ($op) {
+		
+    case 'configure':
+      $form['local_menu_start'] = array(
+        '#type' => 'select',
+        '#title' => t('Starting depth'),
+        '#description' => t('At what depth we need to start draw the menu.'),
+        '#options' => array(
+        	LOCAL_MENU_TOP => t('Top level (like a normal menu)'),
+        	2 => t('Level #2'),
+        	3 => t('Level #3'),
+        	4 => t('Level #4'),
+        	LOCAL_MENU_PARENT => t('Parent depth (of current page)'),
+        	LOCAL_MENU_FAMILY => t('Current depth'),
+        	LOCAL_MENU_CHILDREN => t('One level deeper (children)'),
+        ),
+        '#default_value' => variable_get('local_menu_start', 2),
+      );
+      $form['local_menu_depth'] = array(
+        '#type' => 'select',
+        '#title' => t('Rendered depth'),
+        '#description' => t('How deep we should allow the menu to be.'),
+        '#options' => array(
+        	1 => t('One level (like primary links)'),
+        	2 => t('Two levels'),
+        	3 => t('Three levels'),
+        	LOCAL_MENU_UNLIMITED => t('All levels (unlimited)'),
+        ),
+        '#default_value' => variable_get('local_menu_depth', LOCAL_MENU_UNLIMITED),
+      );
+      
+      return $form;
+      
+    case 'save':
+      variable_set('local_menu_start', $edit['local_menu_start']);
+      variable_set('local_menu_depth', $edit['local_menu_depth']);
+      return;
+      
+    case 'view':
+    default:
+    	$item = menu_get_item();
+    	
+    	// Local Task
+    	if ($item && $item['tab_root']) {
+	    	$path_root = preg_replace('!^('.preg_replace('!%[^/]*!', '[^/]+', $item['tab_root']).').*$!', '\\1', $item['href']);
+	    	$item = menu_get_item($path_root);
+    	}
+    	
+    	// Not found
+    	if (!$item) {
+	    	return FALSE;
+    	}
+    	
+    	// Get the menu link and set the active menu to the menu it's in, so Drupal can find it's way and make correct breadcrumbs at the same time
+    	$link		= menu_link_load(db_result(db_query("SELECT mlid FROM {menu_links} WHERE link_path = '%s' AND hidden <> 1", $item['href'])));
+    	menu_set_active_menu_name($link['menu_name']);
+    	
+    	// Set current path temporarily to the root of the possible local task we might be, so Drupal finds it's way
+    	$q = $_GET['q'];
+    	$_GET['q'] = $item['href'];
+    	$tree		= menu_tree_page_data(menu_get_active_menu_name());
+    	$_GET['q'] = $q;
+    	
+			$depth	= variable_get('local_menu_depth', LOCAL_MENU_UNLIMITED);
+    	$start	= variable_get('local_menu_start', 2);
+    	$title	= db_result(db_query("SELECT title FROM {menu_custom} WHERE menu_name = '%s'", $menu));
+
+    	if ($start == LOCAL_MENU_TOP && $depth == LOCAL_MENU_UNLIMITED) {
+				$block['subject'] = check_plain($title);
+				$block['content'] = menu_tree_output($tree);
+				
+			} else {
+				
+	    	if ($start == LOCAL_MENU_PARENT) {
+		    	$start = max(1, $link['depth'] - 1);
+		    	
+	    	} elseif ($start == LOCAL_MENU_FAMILY) {
+		    	$start = $link['depth'];
+		    	
+	    	} elseif ($start == LOCAL_MENU_CHILDREN) {
+		    	$start = $link['depth'] + 1;
+	    	}
+				
+				$block['content'] = local_menu_content($tree, $start, $depth);
+				$block['subject'] = check_plain(($local_title = local_menu_title()) ? $local_title : $title);
+			}
+			
+      return $block;
+  }
+}
+
+function local_menu_content(&$tree, $start, $depth) {	
+  $items	= array();
+  $output	= '';
+
+  foreach ($tree as $data) {
+    if (!$data['link']['hidden']) {
+      $items[] = $data;
+    }
+  }
+
+  $num_items = count($items);
+  
+  foreach ($items as $i => $data) {
+
+	  if ($start <= $data['link']['depth']) {
+	    $extra_class = NULL;
+	    
+	    if ($i == 0) {
+	      $extra_class = 'first';
+	    }
+	    
+	    if ($i == $num_items - 1) {
+	      $extra_class .= ' last';
+	    }
+	    
+	    $link		= theme('menu_item_link', $data['link']);
+	    $below	= ($depth > 1 && $data['below']) ? local_menu_content($data['below'], $start, $depth - 1) : '';
+	    $output .= theme('menu_item', $link, $data['link']['has_children'], $below, $data['link']['in_active_trail'], $extra_class);
+	    
+    } elseif ($data['link']['in_active_trail'] && $data['below']) {
+
+	    if ($start == $data['link']['depth'] + 1) {
+		    local_menu_title($data['link']['title']);
+	    }
+	    
+	    $output = local_menu_content($data['below'], $start, $depth - 1);
+    }
+  }
+  
+  if ($start <= $data['link']['depth']) {
+		$output = $output ? theme('menu_tree', $output) : '';
+	}
+  
+  return $output;  	
+}
+
+function local_menu_title($set_title = '') {
+	static $title;
+	
+	if ($set_title) {
+		$title = $set_title;
+	}
+	
+	return $title;
+}
+
+?>

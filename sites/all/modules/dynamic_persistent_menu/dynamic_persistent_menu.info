@@ -1,0 +1,11 @@
+; $Id: dynamic_persistent_menu.info,v 1.1.4.1 2008/11/13 23:44:41 yrocq Exp $
+name = Dynamic persistent menu
+description = A menu with an horizontal animated submenu.
+dependencies[] = menu
+core = 6.x
+; Information added by drupal.org packaging script on 2009-01-21
+version = "6.x-1.0"
+core = "6.x"
+project = "dynamic_persistent_menu"
+datestamp = "1232571931"
+

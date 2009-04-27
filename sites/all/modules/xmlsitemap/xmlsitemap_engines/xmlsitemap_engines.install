@@ -1,0 +1,27 @@
+<?php
+// $Id: xmlsitemap_engines.install,v 1.3.2.4 2008/12/18 02:38:03 kiam Exp $
+
+/*****************************************************************************
+ * Drupal hooks.
+ ****************************************************************************/
+
+/**
+ * Implementation of hook_install().
+ */
+function xmlsitemap_engines_install() {
+}
+
+/**
+ * Implementation of hook_update_N().
+ * It fixes the update number to the correct naming convention.
+ */
+function xmlsitemap_engines_update_6100() {
+  return array();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function xmlsitemap_engines_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'xmlsitemap\_engines\_'");
+}

@@ -1,0 +1,150 @@
+$Id: CHANGELOG.txt,v 1.1.4.57 2008/12/19 01:08:40 kiam Exp $
+
+XML Sitemap 6.x-1.x-dev, 2008-12-19
+-----------------------------------
+Removed the translation files which need to be regenerated.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-18
+-----------------------------------
+#348663: SQL errors on update.
+#348759: Undefined function xmlsitemap_url().
+Removed the code to dynamically change the modules priority.
+#348599: Undefined function db_columhn_exists().
+Removed any hook_update_N() with N < 6000.
+Fixed a wrong reference to a table.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-17
+-----------------------------------
+Optimized the code.
+Changed the priority of the single modules.
+#347755: Error in your SQL syntax.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-14
+-----------------------------------
+#344645: Warning: cannot modify header information.
+#344426: Function name must be a string.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-08
+-----------------------------------
+#344383: Unexpected T_STRING on line 211.
+Removed a not used function.
+Fixed an issue with xmlsitemap_file.module which was not looking for the right
+URLs alias.
+#344217: Unexpected T_CONSTANT_ENCAPSED_STRING.
+#340641: xmlsitemap_file uses a not existing field.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-07
+-----------------------------------
+Resolved an issue with xmlsitemap_user.module which didn't populate the 
+xmsitemap_user_role table.
+Resolved an issue with the user interface not showing the default value for
+the priority.
+Added a check in xmlsitemap_menu.module to avoid adding an URL already
+present in the site map.
+
+XML Sitemap 6.x-1.x-dev, 2008-12-06
+-----------------------------------
+#341732: Code typo in xmlsitemap_file.module.
+#342019: Wrong argument type for array_merge().
+Ported the fix for #342122.
+#341730: Code typo in xmlsitemap_menu.install.
+Changed the time zone reference for the log dates to Europe/London. 
+
+XML Sitemap 6.x-1.x-dev, 2008-12-01
+-----------------------------------
+Corrected the dates in CHANGELOG.txt.
+#341125: Missing space in query.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-30
+-----------------------------------
+#340634: menu-xmlsitemap insertion fails.
+#340643: The schema of xmlsitemap_file is not returned.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-29
+-----------------------------------
+#340581: Misnamed update function in xmlsitemap_file.install.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-28
+-----------------------------------
+Ported the fix for #285549.
+#340301: xmlsitemap_update_6104 should return an array.
+#340211: Wrong declaration of dependencies.
+Ported xmlsitemap_file from 5.x-2.x-dev.
+Ported xmlsitemap_menu from 5.x-2.x-dev.
+#339984: stdClass could not be converted.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-27
+-----------------------------------
+Corrected the wrong definition of the table 'xmlsitemap'.
+#339886: xmlsitemap_frequency(0) returns 'always'.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-26
+-----------------------------------
+#339374: Problems with xmlsitemap_user.install.
+Changed the code to remove temporary files.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-25
+-----------------------------------
+#338907: Parse error.
+Ported the fix for #279403.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-24
+-----------------------------------
+Ported xmlsitemap_user from 5.x-2.x-dev.
+Changed the xmlsitemap to make it match the definition given in 5.x-2.x-dev.
+Updated the tables to use more space for the URLs.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-23
+-----------------------------------
+Ported the fix for #298108.
+Optimized the update code for xmlsitemap.
+#338094: Unknown column 'xn.pid' in 'field list'.
+Fixed a problem with gss.xsl.
+Rearranged the installation code.
+Moved the first PHP comment to the last line of gss.php.
+Added code into the update function to remove any cached content of sitemap.xml.
+Ported xmlsitemap_term from 5.x-2.x-dev.
+Removed the code to update from gsitemap.
+Ported xmlsitemap_engines from 5.x-2.x-dev.
+#336878: Last modification date is reported to be January 1, 1970.
+#336982: sitemap.xml is empty (except the general tags).
+#337949: Syntax error in xmlsitemap_node.
+Completed the porting of xmlsitemap_node.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-22
+-----------------------------------
+Started the porting of xmlsitemap_node from 5.x-2.x-dev.
+Applied the patch for #336712.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-20
+-----------------------------------
+Optimized _xmlsitemap_submit_on_exit().
+#336823: Undefined function xmlsitemap_frequency().
+#336059: Table xmlsitemap doesn't exist.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-19
+-----------------------------------
+#285457: gss.xsl is missing.
+#336059: Table xmlsitemap doesn't exist.
+Added the CHANGELOG.txt file.
+#335696: Call to undefined function Fatal error.
+
+XML Sitemap 6.x-1.x-dev, 2008-11-18
+-----------------------------------
+Fixed the handling of invalid interval strings in xmlsitemap_frequency().
+
+XML Sitemap 6.x-1.x-dev, 2008-11-17
+-----------------------------------
+Removed the dependency on the zlib extension.
+Removed the code to update from gsitemap.module.
+Removed any references to the file gss.xsl.
+Corrected the implementation of form submit functions.
+Removed outdated code.
+#292489: Undefined variable.
+#292103: Use of an unexisting array index.
+Fixed a problem with the content type administration page buttons.
+#284903: Wrong code.
+#299023: xmlsitemap_node_priority() uses a variable without to check if it is set.
+#299010.
+#279954: Use of an undefined constant.
+Fixed problems with the definition of the menus.
